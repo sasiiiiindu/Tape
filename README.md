@@ -8,6 +8,8 @@ A calm Pomodoro timer for the Mac menu bar: your session is a tape of minutes sl
 - Click it for the panel: the countdown, Start/Pause, Restart, Skip, and the tape.
 - By default a session is four rounds of 25 minutes focus and 5 minutes break, and each block runs straight into the next.
 - Settings (the sliders button in the panel) change the focus and break lengths, the number of rounds, and add a long break every few rounds. A live preview shows the whole session and how long it takes. You can also turn off auto-continue and hide the countdown in the menu bar.
+- When a block ends you hear a chime (Soft chime, Bell or None) and get a notification saying what's next. Tape asks for notification permission the first time you press Start.
+- With the panel open, Space starts and pauses, S skips and Esc closes it. Settings can also turn on ⌃⌥T to open the panel from any app, and launch Tape at login.
 - Time is worked out from the clock, so it stays right through sleep and pauses.
 - Tape lives only in the menu bar. It has no Dock icon and no window. To quit, use **Quit Tape** at the bottom of Settings, or press ⌘Q while the panel is open.
 

@@ -23,6 +23,10 @@ final class SessionTimer: ObservableObject {
     var autoContinue = true
     /// Session seconds per real second. 1 except in fast mode.
     let speed: Double
+    /// Sent when time runs out on a block, after the timer has moved on, so
+    /// the timer already shows what comes next. Not sent for Skip or Finish.
+    /// After a long sleep that passed several blocks, it's sent once.
+    let blockEnded = PassthroughSubject<Void, Never>()
 
     private let clock: () -> Date
     /// What the next session will look like. Settings change this; it only
@@ -158,7 +162,9 @@ final class SessionTimer: ObservableObject {
         let left = blockEnd.timeIntervalSince(now) * speed
         if left > 0 {
             remaining = min(left, currentBlock.duration)
-        } else if autoContinue {
+            return
+        }
+        if autoContinue {
             // The block is over. Carry the overrun on into the following
             // blocks; after a long sleep that can be several of them.
             move(toSessionOffset: currentBlock.end - left, running: true)
@@ -167,6 +173,7 @@ final class SessionTimer: ObservableObject {
             // ended (even after a long sleep).
             move(toSessionOffset: currentBlock.end, running: false)
         }
+        blockEnded.send()
     }
 
     private func run() {

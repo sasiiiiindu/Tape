@@ -15,6 +15,8 @@ struct SettingsStoreTests {
         #expect(store.session.plan == .standard)
         #expect(store.autoContinue)
         #expect(store.showCountdownInMenuBar)
+        #expect(store.alertSound == .softChime)
+        #expect(!store.globalShortcut)
         defaults.removePersistentDomain(forName: suite)
     }
 
@@ -25,6 +27,8 @@ struct SettingsStoreTests {
         store.session.longBreakEvery = 3
         store.autoContinue = false
         store.showCountdownInMenuBar = false
+        store.alertSound = .bell
+        store.globalShortcut = true
 
         let reloaded = SettingsStore(defaults: defaults)
         #expect(reloaded.session.focusMinutes == 50)
@@ -32,6 +36,8 @@ struct SettingsStoreTests {
         #expect(reloaded.session.longBreakEvery == 3)
         #expect(!reloaded.autoContinue)
         #expect(!reloaded.showCountdownInMenuBar)
+        #expect(reloaded.alertSound == .bell)
+        #expect(reloaded.globalShortcut)
         defaults.removePersistentDomain(forName: suite)
     }
 
@@ -39,10 +45,12 @@ struct SettingsStoreTests {
         defaults.set(500, forKey: "focusMinutes")
         defaults.set(0, forKey: "rounds")
         defaults.set(7, forKey: "longBreakEvery")
+        defaults.set("trumpet", forKey: "alertSound")
         let store = SettingsStore(defaults: defaults)
         #expect(store.session.focusMinutes == 90)
         #expect(store.session.rounds == 1)
         #expect(store.session.longBreakEvery == 0)
+        #expect(store.alertSound == .softChime)
         defaults.removePersistentDomain(forName: suite)
     }
 

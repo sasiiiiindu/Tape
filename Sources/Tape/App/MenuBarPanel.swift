@@ -9,6 +9,8 @@ import SwiftUI
 /// Closes on Esc or when the user clicks anywhere else.
 final class MenuBarPanel: NSPanel {
     var onClose: (() -> Void)?
+    /// Keys nothing in the panel used. Returns true if it used the key.
+    var onKeyDown: ((NSEvent) -> Bool)?
     private let hostingView: NSView
 
     init<Content: View>(content: Content) {
@@ -85,6 +87,11 @@ final class MenuBarPanel: NSPanel {
 
     override func cancelOperation(_ sender: Any?) {
         close()
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if onKeyDown?(event) == true { return }
+        super.keyDown(with: event)
     }
 
     // ⌘Q while the panel is open. There's no app menu to give Quit a

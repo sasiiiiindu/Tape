@@ -17,6 +17,14 @@ final class SettingsStore: ObservableObject {
     @Published var showCountdownInMenuBar: Bool {
         didSet { defaults.set(showCountdownInMenuBar, forKey: Key.showCountdown) }
     }
+    /// Played when a block ends.
+    @Published var alertSound: AlertSound {
+        didSet { defaults.set(alertSound.rawValue, forKey: Key.alertSound) }
+    }
+    /// The ⌃⌥T shortcut from any app. Off by default.
+    @Published var globalShortcut: Bool {
+        didSet { defaults.set(globalShortcut, forKey: Key.globalShortcut) }
+    }
 
     private let defaults: UserDefaults
 
@@ -28,6 +36,8 @@ final class SettingsStore: ObservableObject {
         static let longBreakEvery = "longBreakEvery"
         static let autoContinue = "autoContinue"
         static let showCountdown = "showCountdownInMenuBar"
+        static let alertSound = "alertSound"
+        static let globalShortcut = "globalShortcut"
     }
 
     /// Tests pass their own UserDefaults so they never touch the app's.
@@ -42,6 +52,8 @@ final class SettingsStore: ObservableObject {
             Key.longBreakEvery: standard.longBreakEvery,
             Key.autoContinue: true,
             Key.showCountdown: true,
+            Key.alertSound: AlertSound.softChime.rawValue,
+            Key.globalShortcut: false,
         ])
         session = SessionSettings(
             focusMinutes: defaults.integer(forKey: Key.focus),
@@ -52,6 +64,8 @@ final class SettingsStore: ObservableObject {
         ).clamped()
         autoContinue = defaults.bool(forKey: Key.autoContinue)
         showCountdownInMenuBar = defaults.bool(forKey: Key.showCountdown)
+        alertSound = defaults.string(forKey: Key.alertSound).flatMap(AlertSound.init) ?? .softChime
+        globalShortcut = defaults.bool(forKey: Key.globalShortcut)
     }
 
     private func save(_ session: SessionSettings) {

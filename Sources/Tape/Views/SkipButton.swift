@@ -19,5 +19,6 @@ struct SkipButton: View {
                 .contentShape(RoundedRectangle(cornerRadius: Theme.Sizes.footerButtonRadius))
         }
         .buttonStyle(PressableButtonStyle())
+        .help("\(title) (S)")
     }
 }

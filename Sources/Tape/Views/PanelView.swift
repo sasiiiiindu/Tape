@@ -8,6 +8,9 @@ import SwiftUI
 struct PanelView: View {
     let timer: SessionTimer
     let settings: SettingsStore
+    let notifier: Notifier
+    let loginItem: LoginItem
+    let shortcut: GlobalShortcut
     /// Redraws the panel when the timer changes, but only while it's open.
     @ObservedObject var updates: PanelUpdates
 
@@ -21,6 +24,9 @@ struct PanelView: View {
             case .settings:
                 SettingsView(
                     settings: settings,
+                    notifier: notifier,
+                    loginItem: loginItem,
+                    shortcut: shortcut,
                     sessionInProgress: timer.state != .idle,
                     accent: Theme.Colors.accent(for: timer.currentBlock.kind)
                 ) { show(.timer) }

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+### Added
+
+- A chime and a notification when a block ends: "Break · Back to focus at
+  7:55 PM", "Focus · Round 3 of 4", or "Session complete". Tape asks to send
+  notifications the first time you press Start, not at launch. The chime
+  plays even if notifications are turned off.
+- Settings shows whether notifications are on. If they're off, "Off ›" opens
+  Tape's page in System Settings, since macOS only asks once.
+- Sound setting: Soft chime (default), Bell or None. They're sounds built into
+  macOS, and each one plays as you pick it.
+- Launch at login. If macOS needs you to allow it, or Tape is running from the
+  disk image, a short note next to the switch says so.
+- Keys while the panel is open: Space starts, pauses and resumes (or starts a
+  new session once one is complete), S skips, Esc closes the panel.
+- An optional shortcut, ⌃⌥T, that opens and closes the panel from any app. Off
+  by default, and needs no extra permissions.
+
 ## [0.2.0] - 2026-10-21
 
 ### Added
@@ -51,6 +70,7 @@ First release.
 - Menu bar only, with no Dock icon. Quit from the panel's settings menu or
   with ⌘Q while the panel is open.
 
-[Unreleased]: https://github.com/sasiiiiindu/Tape/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sasiiiiindu/Tape/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/sasiiiiindu/Tape/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sasiiiiindu/Tape/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sasiiiiindu/Tape/releases/tag/v0.1.0

@@ -4,6 +4,8 @@ import Combine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController?
+    private var blockAlerts: BlockAlerts?
+    private var shortcut: GlobalShortcut?
     private var settingsSubscriptions: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -20,6 +22,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { timer.autoContinue = $0 }
             .store(in: &settingsSubscriptions)
 
-        statusItemController = StatusItemController(timer: timer, settings: settings)
+        let notifier = Notifier()
+        blockAlerts = BlockAlerts(timer: timer, settings: settings, notifier: notifier)
+
+        // The shortcut needs the controller and the controller shows the
+        // shortcut's state in Settings, so the action looks it up later.
+        let shortcut = GlobalShortcut { [weak self] in self?.statusItemController?.togglePanel() }
+        self.shortcut = shortcut
+        statusItemController = StatusItemController(timer: timer, settings: settings, notifier: notifier,
+                                                    loginItem: LoginItem(), shortcut: shortcut)
+
+        settings.$globalShortcut
+            .sink { shortcut.setEnabled($0) }
+            .store(in: &settingsSubscriptions)
     }
 }

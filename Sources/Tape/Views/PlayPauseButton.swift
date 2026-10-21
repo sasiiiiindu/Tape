@@ -26,7 +26,7 @@ struct PlayPauseButton: View {
         }
         .buttonStyle(PressableButtonStyle())
         .keyboardShortcut(.defaultAction)
-        .help(isRunning ? "Pause" : playLabel)
+        .help("\(isRunning ? "Pause" : playLabel) (Space)")
         .accessibilityLabel(isRunning ? "Pause" : playLabel)
     }
 }

@@ -33,15 +33,19 @@ final class StatusItemController: NSObject {
     /// without this check that click would immediately reopen it.
     private var lastClosed = Date.distantPast
 
-    init(timer: SessionTimer, settings: SettingsStore) {
+    init(timer: SessionTimer, settings: SettingsStore, notifier: Notifier, loginItem: LoginItem,
+         shortcut: GlobalShortcut) {
         self.timer = timer
         self.settings = settings
         updates = PanelUpdates(timer: timer)
-        panel = MenuBarPanel(content: PanelView(timer: timer, settings: settings, updates: updates))
+        panel = MenuBarPanel(content: PanelView(timer: timer, settings: settings, notifier: notifier,
+                                                loginItem: loginItem, shortcut: shortcut, updates: updates))
         pageHeights = [
             .timer: Self.height(of: TimerView(timer: timer, updates: updates, onSettings: {})),
-            .settings: Self.height(of: SettingsView(settings: settings, sessionInProgress: false,
-                                                    accent: Theme.Colors.focus, onBack: {})),
+            .settings: Self.height(of: SettingsView(settings: settings, notifier: notifier,
+                                                    loginItem: loginItem, shortcut: shortcut,
+                                                    sessionInProgress: false, accent: Theme.Colors.focus,
+                                                    onBack: {})),
         ]
         super.init()
 
@@ -79,6 +83,25 @@ final class StatusItemController: NSObject {
             self?.updates.page = .timer
             self?.statusItem.button?.highlight(false)
         }
+        panel.onKeyDown = { [weak self] event in self?.handleKey(event) ?? false }
+    }
+
+    /// Space and S on the timer page. Settings has switches and steppers of
+    /// its own, so keys are left alone there.
+    private func handleKey(_ event: NSEvent) -> Bool {
+        guard updates.page == .timer,
+              event.modifierFlags.intersection([.command, .option, .control]).isEmpty else { return false }
+        let command: PanelCommand
+        switch event.charactersIgnoringModifiers?.lowercased() {
+        case " ": command = .playPause
+        case "s": command = .skip
+        default: return false
+        }
+        // Holding the key down shouldn't flick between start and pause.
+        if !event.isARepeat {
+            updates.commands.send(command)
+        }
+        return true
     }
 
     /// Bring the strip and mm:ss up to date, touching only what changed.
@@ -113,7 +136,8 @@ final class StatusItemController: NSObject {
         NSHostingView(rootView: page).fittingSize.height
     }
 
-    @objc private func togglePanel() {
+    /// Also called by the global shortcut.
+    @objc func togglePanel() {
         if panel.isVisible {
             panel.close()
         } else if Date().timeIntervalSince(lastClosed) > 0.3 {

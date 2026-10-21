@@ -56,6 +56,7 @@ struct TimerView: View {
         }
         .padding(Theme.Sizes.panelPadding)
         .frame(width: Theme.Sizes.panelWidth, alignment: .leading)
+        .onReceive(updates.commands, perform: perform)
     }
 
     private var isComplete: Bool { timer.state == .finished }
@@ -86,6 +87,22 @@ struct TimerView: View {
         let from = TapeSlide.shownElapsed(of: timer, slide: slide, at: now)
         action()
         slide = TapeSlide(from: from, start: now)
+    }
+
+    /// Space and S do what the buttons do, so the tape slides the same way.
+    private func perform(_ command: PanelCommand) {
+        switch command {
+        case .playPause:
+            if isComplete {
+                slideTape(timer.newSession)
+            } else {
+                playPause()
+            }
+        case .skip:
+            if !isComplete {
+                slideTape(timer.skip)
+            }
+        }
     }
 
     private func playPause() {
