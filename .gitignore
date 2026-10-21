@@ -65,3 +65,6 @@ fastlane/test_output
 dist/
 *.dmg
 .DS_Store
+
+# Built app and DMG
+dist/
