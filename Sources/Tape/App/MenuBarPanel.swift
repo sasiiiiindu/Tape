@@ -9,8 +9,10 @@ import SwiftUI
 /// Closes on Esc or when the user clicks anywhere else.
 final class MenuBarPanel: NSPanel {
     var onClose: (() -> Void)?
+    private let hostingView: NSView
 
     init<Content: View>(content: Content) {
+        hostingView = NSHostingView(rootView: content)
         super.init(
             contentRect: .zero,
             styleMask: [.borderless, .fullSizeContentView],
@@ -33,7 +35,6 @@ final class MenuBarPanel: NSPanel {
         background.state = .active
         background.maskImage = Self.roundedMask(radius: 12)
 
-        let hostingView = NSHostingView(rootView: content)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(hostingView)
         NSLayoutConstraint.activate([
@@ -44,6 +45,11 @@ final class MenuBarPanel: NSPanel {
         ])
 
         contentView = background
+        fitToContent()
+    }
+
+    /// Resize the window to whatever size the SwiftUI content wants.
+    func fitToContent() {
         setContentSize(hostingView.fittingSize)
     }
 

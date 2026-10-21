@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItemController = StatusItemController()
+        let timer = SessionTimer(speed: FastMode.speed)
+        statusItemController = StatusItemController(timer: timer)
     }
 }

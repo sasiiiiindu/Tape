@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 /// Owns the menu bar item and opens/closes the panel under it.
 ///
@@ -8,23 +9,32 @@ import AppKit
 @MainActor
 final class StatusItemController: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    private let panel = MenuBarPanel(content: PanelView())
+    private let panel: MenuBarPanel
+    private var titleSubscription: AnyCancellable?
 
     /// When the panel last closed. Clicking the menu bar item while the panel
     /// is open can close it (focus moves away) just before the click arrives;
     /// without this check that click would immediately reopen it.
     private var lastClosed = Date.distantPast
 
-    override init() {
+    init(timer: SessionTimer) {
+        panel = MenuBarPanel(content: PanelView(timer: timer))
         super.init()
 
         if let button = statusItem.button {
             let size = NSFont.menuBarFont(ofSize: 0).pointSize
             button.font = .monospacedDigitSystemFont(ofSize: size, weight: .regular)
-            button.title = "25:00"
             button.target = self
             button.action = #selector(togglePanel)
         }
+
+        // Live mm:ss in the menu bar, only touched when the text changes.
+        titleSubscription = timer.$remaining
+            .map(TimeFormat.minutesSeconds)
+            .removeDuplicates()
+            .sink { [weak self] title in
+                self?.statusItem.button?.title = title
+            }
 
         panel.onClose = { [weak self] in
             self?.lastClosed = Date()
@@ -44,6 +54,7 @@ final class StatusItemController: NSObject {
         guard let button = statusItem.button, let buttonWindow = button.window else { return }
 
         // Centre the panel under the menu bar item, kept 8 pt inside the screen.
+        panel.fitToContent()
         let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
         let screenFrame = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
         let size = panel.frame.size
