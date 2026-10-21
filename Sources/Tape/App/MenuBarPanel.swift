@@ -27,6 +27,10 @@ final class MenuBarPanel: NSPanel {
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         animationBehavior = .utilityWindow
+        // Dark only until light mode (Phase 8). Set on the window, not in
+        // SwiftUI, because the blur below is AppKit and SwiftUI's colour
+        // scheme doesn't reach it.
+        appearance = NSAppearance(named: .darkAqua)
 
         // System blur material, rounded with a mask, like the native menu bar window.
         let background = NSVisualEffectView()
@@ -64,6 +68,18 @@ final class MenuBarPanel: NSPanel {
 
     override func cancelOperation(_ sender: Any?) {
         close()
+    }
+
+    // ⌘Q while the panel is open. Quit itself lives in the settings menu,
+    // whose shortcut only works while that menu is showing.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // Only these four, so Caps Lock being on doesn't stop the match.
+        if event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command,
+           event.charactersIgnoringModifiers == "q" {
+            NSApp.terminate(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
     }
 
     // Closing gives up focus, which calls resignKey(), which calls close()

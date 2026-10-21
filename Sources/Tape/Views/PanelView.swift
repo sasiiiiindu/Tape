@@ -1,85 +1,76 @@
 import SwiftUI
 
-/// Contents of the drop-down panel. Temporary, unstyled layout for checking
-/// the timer; the real design arrives in a later phase.
+/// Contents of the drop-down panel: header, countdown and controls, tape,
+/// footer. Sizes and colours live in Theme.
 ///
-/// Every row is shown in every state so the panel never changes height.
+/// Every row keeps its height in every state: the window is only sized when
+/// it opens, so a row that grew or shrank while it's open would be clipped.
 struct PanelView: View {
     @ObservedObject var timer: SessionTimer
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(header)
-                    .font(.system(size: 13, weight: .semibold))
+        VStack(alignment: .leading, spacing: Theme.Sizes.sectionSpacing) {
+            HeaderView(
+                title: isComplete ? "Done" : timer.currentBlock.kind.title,
+                round: "Round \(timer.currentBlock.round) of \(timer.plan.rounds)",
+                accent: accent
+            )
+
+            HStack(alignment: .center) {
+                CountdownView(
+                    time: TimeFormat.minutesSeconds(timer.remaining),
+                    subline: untilLine,
+                    isComplete: isComplete
+                )
                 Spacer()
-                Text("Round \(timer.currentBlock.round) of \(timer.plan.rounds)")
-                    .foregroundStyle(.secondary)
-            }
-
-            Text(TimeFormat.minutesSeconds(timer.remaining))
-                .font(.system(size: 40, weight: .light, design: .rounded).monospacedDigit())
-
-            Text(untilLine)
-                .foregroundStyle(.secondary)
-
-            HStack {
-                Button(primaryTitle, action: primaryAction)
-                    .keyboardShortcut(.defaultAction)
-                Button("Restart", action: timer.restartBlock)
-                    .disabled(timer.state == .idle || timer.state == .finished)
-                Button(skipTitle, action: timer.skip)
-                    .disabled(timer.state == .finished)
-            }
-
-            Divider()
-
-            HStack {
-                Text(doneLine)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Quit Tape") {
-                    NSApp.terminate(nil)
+                if !isComplete {
+                    HStack(spacing: Theme.Sizes.controlSpacing) {
+                        RestartButton(action: timer.restartBlock)
+                            .disabled(timer.state == .idle)
+                        PlayPauseButton(
+                            isRunning: timer.state == .running,
+                            playLabel: timer.state == .paused ? "Resume" : "Start",
+                            accent: accent,
+                            action: playPause
+                        )
+                    }
                 }
-                .keyboardShortcut("q")
+            }
+
+            TapePlaceholder()
+
+            FooterView(trailing: doneLine) {
+                if isComplete {
+                    NewSessionButton(accent: accent, action: timer.newSession)
+                } else {
+                    SkipButton(title: skipTitle, action: timer.skip)
+                }
             }
         }
-        .font(.system(size: 12))
-        .padding(.top, 18)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 16)
-        .frame(width: 320, alignment: .leading)
+        .padding(Theme.Sizes.panelPadding)
+        .frame(width: Theme.Sizes.panelWidth, alignment: .leading)
     }
 
-    private var header: String {
-        timer.state == .finished ? "Session complete" : timer.currentBlock.kind.title
-    }
+    private var isComplete: Bool { timer.state == .finished }
+
+    private var accent: Color { Theme.Colors.accent(for: timer.currentBlock.kind) }
 
     private var untilLine: String {
-        if timer.state == .finished { return "Nice work." }
+        if isComplete { return "Nice work." }
         let at = TimeFormat.clock(timer.nextBlockStart)
         guard let next = timer.nextBlock else { return "until done at \(at)" }
         return "until \(next.kind.title.lowercased()) at \(at)"
     }
 
     private var doneLine: String {
-        timer.state == .finished ? "All rounds done" : "Done at \(TimeFormat.clock(timer.sessionEnd))"
+        isComplete ? "" : "Done at \(TimeFormat.clock(timer.sessionEnd))"
     }
 
-    private var primaryTitle: String {
-        switch timer.state {
-        case .idle: "Start"
-        case .running: "Pause"
-        case .paused: "Resume"
-        case .finished: "New session"
-        }
-    }
-
-    private func primaryAction() {
-        switch timer.state {
-        case .idle, .paused: timer.start()
-        case .running: timer.pause()
-        case .finished: timer.newSession()
+    private func playPause() {
+        if timer.state == .running {
+            timer.pause()
+        } else {
+            timer.start()
         }
     }
 
