@@ -6,11 +6,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController?
     private var blockAlerts: BlockAlerts?
     private var shortcut: GlobalShortcut?
+    private var sessionSaver: SessionSaver?
     private var settingsSubscriptions: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let settings = SettingsStore()
         let timer = SessionTimer(plan: settings.session.plan, speed: FastMode.speed)
+        // Before anything shows the timer: brings back a session Tape quit
+        // in the middle of, paused.
+        sessionSaver = SessionSaver(timer: timer)
 
         // Pass setting changes on to the timer. A new session shape waits
         // for the next session unless the timer is idle; auto-continue
@@ -35,5 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$globalShortcut
             .sink { shortcut.setEnabled($0) }
             .store(in: &settingsSubscriptions)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        sessionSaver?.saveNow()
     }
 }

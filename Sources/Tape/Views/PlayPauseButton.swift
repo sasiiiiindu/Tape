@@ -7,6 +7,7 @@ struct PlayPauseButton: View {
     let playLabel: String
     let accent: Color
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: action) {
@@ -20,7 +21,7 @@ struct PlayPauseButton: View {
                 .background(
                     Circle()
                         .fill(accent)
-                        .animation(Theme.Motion.accentChange, value: accent)
+                        .animation(Theme.Motion.accentChange(reduceMotion), value: accent)
                 )
                 .contentShape(Circle())
         }

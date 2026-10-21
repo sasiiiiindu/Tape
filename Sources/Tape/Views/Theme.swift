@@ -1,20 +1,25 @@
+import AppKit
 import SwiftUI
 
 /// Every colour, font, size and timing the panel uses, in one place.
 /// Values come from docs/DESIGN.md; change them here, not in the views.
 enum Theme {
+    /// Each colour has a light and a dark version and follows the
+    /// appearance it's drawn in. Light versions are deeper so they read on
+    /// the light material: text has at least 4.5:1 contrast on it, accents
+    /// at least 3:1, with white on top (see docs/DESIGN.md).
     enum Colors {
-        static let focus = Color(hex: 0xF2685A)
-        static let breakTime = Color(hex: 0x8CC4A4)
+        static let focus = Color(light: 0xD2412F, dark: 0xF2685A)
+        static let breakTime = Color(light: 0x2A8458, dark: 0x8CC4A4)
         /// A deeper shade of the break colour, so long breaks stand out.
-        static let longBreak = Color(hex: 0x52A07C)
-        static let text = Color(hex: 0xF5F5F7)
-        static let secondary = Color(hex: 0xA8A8B0)
+        static let longBreak = Color(light: 0x1D6644, dark: 0x52A07C)
+        static let text = Color(light: 0x1D1D1F, dark: 0xF5F5F7)
+        static let secondary = Color(light: 0x545459, dark: 0xA8A8B0)
         /// Fill behind the restart and skip buttons.
-        static let track = Color.white.opacity(0.10)
-        static let divider = Color.white.opacity(0.09)
+        static let track = Color(light: .black.withAlphaComponent(0.06), dark: .white.withAlphaComponent(0.10))
+        static let divider = Color(light: .black.withAlphaComponent(0.10), dark: .white.withAlphaComponent(0.09))
         /// Icons and text drawn on top of the accent colour.
-        static let onAccent = Color(hex: 0x1C1C1E)
+        static let onAccent = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
 
         static func accent(for kind: BlockKind) -> Color {
             switch kind {
@@ -111,9 +116,12 @@ enum Theme {
         static let needleHeight: CGFloat = 38
         static let needleDot: CGFloat = 8
 
-        /// Extra room drawn on both ends of the strip, for the end ticks and
-        /// the last label.
-        static let stripPadding: CGFloat = 60
+        /// How much of the session the strip draws around the needle, in
+        /// seconds: a little more than the 12 minutes visible behind it
+        /// (room for a label that starts off screen) and the 28 ahead. Only
+        /// this part is drawn, so a long session costs no more than a short one.
+        static let drawnBehind: TimeInterval = 22 * 60
+        static let drawnAhead: TimeInterval = 30 * 60
         /// How far the strip should move between redraws while running. The
         /// redraw rate follows from it: about once a second at normal speed,
         /// about 28 times a second in fast mode.
@@ -157,8 +165,10 @@ enum Theme {
     }
 
     enum Motion {
-        /// Focus <-> break colour change.
-        static let accentChange = Animation.easeInOut(duration: 0.6)
+        /// Focus <-> break colour change. Instant with Reduce Motion on.
+        static func accentChange(_ reduceMotion: Bool) -> Animation? {
+            reduceMotion ? nil : .easeInOut(duration: 0.6)
+        }
         /// Skip, Restart and New session slide the tape instead of jumping.
         static let tapeSlide: TimeInterval = 0.4
         /// The timer and settings pages sliding past each other, and the
@@ -168,13 +178,28 @@ enum Theme {
 }
 
 private extension Color {
-    /// `Color(hex: 0xF2685A)`.
-    init(hex: UInt32) {
+    /// `Color(light: 0xD2412F, dark: 0xF2685A)`.
+    init(light: UInt32, dark: UInt32) {
+        self.init(light: NSColor(hex: light), dark: NSColor(hex: dark))
+    }
+
+    /// Picks `light` or `dark` each time it's drawn, from the appearance
+    /// it's drawn in. AppKit colour so the menu bar image can use it too.
+    init(light: NSColor, dark: NSColor) {
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+        })
+    }
+}
+
+private extension NSColor {
+    /// `NSColor(hex: 0xF2685A)`.
+    convenience init(hex: UInt32) {
         self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255
+            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
         )
     }
 }

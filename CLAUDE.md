@@ -26,8 +26,10 @@ say exactly how to test each step.
 ## Layout
 - Package.swift
 - Sources/Tape/        app code (App, Model, Views, Services folders)
-- Resources/           Info.plist, sounds, AppIcon.icns
-- scripts/build-app.sh release build -> dist/Tape.app
+- Resources/           Info.plist, AppIcon.icns
+- art/                 icon art (icon-1024.png, transparent background)
+- scripts/make-icon.sh art/icon-1024.png -> Resources/AppIcon.icns
+- scripts/build-app.sh universal release build -> dist/Tape.app
 - scripts/run.sh       build + open the app for testing
 - scripts/make-dmg.sh  dist/Tape.app -> dist/Tape-<version>.dmg
 - VERSION              single source of truth for the version number

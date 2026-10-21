@@ -2,10 +2,17 @@ import Foundation
 import Testing
 @testable import Tape
 
-/// A clock the tests move by hand.
+/// A clock the tests move by hand. `uptime` is the Mac's seconds since
+/// startup: real time passing moves both, changing the clock moves only `now`.
 final class FakeClock {
     var now = Date(timeIntervalSinceReferenceDate: 0)
-    func advance(minutes: Double) { now += minutes * 60 }
+    var uptime: TimeInterval = 1000
+    func advance(minutes: Double) {
+        now += minutes * 60
+        uptime += minutes * 60
+    }
+    /// The user sets the Mac's clock forward (or back, if negative).
+    func changeClock(byMinutes minutes: Double) { now += minutes * 60 }
 }
 
 @MainActor
@@ -13,7 +20,8 @@ struct SessionTimerTests {
     let clock = FakeClock()
 
     func makeTimer(speed: Double = 1, autoContinue: Bool = true) -> SessionTimer {
-        let timer = SessionTimer(plan: .standard, speed: speed, clock: { [clock] in clock.now }, live: false)
+        let timer = SessionTimer(plan: .standard, speed: speed, clock: { [clock] in clock.now },
+                                 uptime: { [clock] in clock.uptime }, live: false)
         timer.autoContinue = autoContinue
         return timer
     }

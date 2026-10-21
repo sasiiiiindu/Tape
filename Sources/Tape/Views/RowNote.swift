@@ -12,6 +12,8 @@ struct RowNote: View {
                 label(text + " ›")
             }
             .buttonStyle(PressableButtonStyle())
+            .accessibilityLabel(text)
+            .accessibilityHint("Opens System Settings")
         } else {
             label(text)
         }

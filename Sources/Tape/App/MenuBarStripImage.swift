@@ -17,25 +17,33 @@ enum MenuBarStripImage {
                           height: Theme.MenuBar.stripHeight)
 
         let image = NSImage(size: size, flipped: false) { _ in
-            for segment in strip.segments {
-                let rect = NSRect(x: segment.x, y: 0, width: segment.width, height: Theme.MenuBar.stripHeight)
-                let radius = min(Theme.MenuBar.cornerRadius, segment.width / 2)
-                let shape = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
-
-                future.setFill()
-                shape.fill()
-
-                guard segment.filled > 0 else { continue }
-                NSGraphicsContext.saveGraphicsState()
-                shape.addClip()
-                NSColor(Theme.Colors.accent(for: segment.kind)).setFill()
-                NSRect(x: segment.x, y: 0, width: segment.filled, height: Theme.MenuBar.stripHeight).fill()
-                NSGraphicsContext.restoreGraphicsState()
+            // The block colours follow the menu bar, not the system: deeper
+            // ones on a light menu bar, the same as on a light panel.
+            (NSAppearance(named: dark ? .darkAqua : .aqua) ?? .currentDrawing()).performAsCurrentDrawingAppearance {
+                draw(strip, future: future)
             }
             return true
         }
         image.isTemplate = false
         image.accessibilityDescription = "Session progress"
         return image
+    }
+
+    private static func draw(_ strip: MenuBarStrip, future: NSColor) {
+        for segment in strip.segments {
+            let rect = NSRect(x: segment.x, y: 0, width: segment.width, height: Theme.MenuBar.stripHeight)
+            let radius = min(Theme.MenuBar.cornerRadius, segment.width / 2)
+            let shape = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+
+            future.setFill()
+            shape.fill()
+
+            guard segment.filled > 0 else { continue }
+            NSGraphicsContext.saveGraphicsState()
+            shape.addClip()
+            NSColor(Theme.Colors.accent(for: segment.kind)).setFill()
+            NSRect(x: segment.x, y: 0, width: segment.filled, height: Theme.MenuBar.stripHeight).fill()
+            NSGraphicsContext.restoreGraphicsState()
+        }
     }
 }

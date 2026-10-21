@@ -15,5 +15,7 @@ struct QuitButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableButtonStyle())
+        // Otherwise VoiceOver also reads the "⌘Q" next to it.
+        .accessibilityLabel("Quit Tape")
     }
 }

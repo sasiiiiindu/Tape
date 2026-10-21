@@ -6,6 +6,11 @@ import Combine
 /// Timing is date-based. While running we store the real moment the current
 /// block ends and work out what's left from the clock; nothing is counted
 /// down by subtraction, so sleep, wake and late timer ticks can't make it drift.
+///
+/// Changing the Mac's clock by hand would move "now" without any time
+/// passing, so each update also checks a second clock that can't be changed
+/// (it counts seconds since startup, sleep included). If the two disagree,
+/// the clock was changed, and the block's end moves by the same amount.
 @MainActor
 final class SessionTimer: ObservableObject {
     @Published private(set) var state: TimerState = .idle
@@ -29,28 +34,35 @@ final class SessionTimer: ObservableObject {
     let blockEnded = PassthroughSubject<Void, Never>()
 
     private let clock: () -> Date
+    /// Seconds since startup, counting sleep. Unaffected by clock changes.
+    private let uptime: () -> TimeInterval
+    /// Both clocks at the last reading, to spot a clock change.
+    private var lastReading: (date: Date, uptime: TimeInterval)?
     /// What the next session will look like. Settings change this; it only
     /// becomes `plan` while idle, so a session never changes shape mid-way.
     private var nextPlan: SessionPlan
     /// Real moment the current block ends. Only set while running.
     private var blockEnd: Date?
     private var ticker: Timer?
-    private var wakeObserver: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
 
-    /// `clock` and `live` exist for tests: a fake clock, and no real timer or
-    /// wake notifications.
+    /// `clock`, `uptime` and `live` exist for tests: fake clocks, and no real
+    /// timer or notifications. A test that fakes one clock fakes both.
     init(
         plan: SessionPlan = .standard,
         speed: Double = 1,
         clock: @escaping () -> Date = Date.init,
+        uptime: @escaping () -> TimeInterval = SessionTimer.systemUptime,
         live: Bool = true
     ) {
         self.plan = plan
         self.nextPlan = plan
         self.speed = speed
         self.clock = clock
+        self.uptime = uptime
         self.remaining = plan.blocks[0].duration
         self.now = clock()
+        self.lastReading = (now, uptime())
         if live {
             startTicking()
         }
@@ -139,7 +151,27 @@ final class SessionTimer: ObservableObject {
         blockIndex = 0
         remaining = currentBlock.duration
         state = .idle
-        now = clock()
+        now = readClock()
+    }
+
+    /// What to save so the session can come back after Tape quits. Nil when
+    /// there's nothing to come back to: not started, or already finished.
+    /// As of the last update.
+    func saved() -> SavedSession? {
+        guard state == .running || state == .paused else { return nil }
+        return SavedSession(plan: plan, blockIndex: blockIndex, remaining: remaining, savedAt: now)
+    }
+
+    /// Bring back a saved session, paused where it was. Only from idle, so
+    /// it can never interrupt a session that's under way.
+    func restore(_ session: SavedSession) {
+        guard state == .idle else { return }
+        plan = session.plan
+        blockIndex = session.blockIndex
+        remaining = session.remaining
+        blockEnd = nil
+        state = .paused
+        now = readClock()
     }
 
     /// Use `plan` for the next session. Applies at once while idle; during a
@@ -156,7 +188,7 @@ final class SessionTimer: ObservableObject {
     /// Bring everything up to date with the clock. Called on every tick, after
     /// wake, and before each action.
     func update() {
-        now = clock()
+        now = readClock()
         guard state == .running, let blockEnd else { return }
 
         let left = blockEnd.timeIntervalSince(now) * speed
@@ -177,9 +209,33 @@ final class SessionTimer: ObservableObject {
     }
 
     private func run() {
-        now = clock()
+        now = readClock()
         blockEnd = now.addingTimeInterval(remaining / speed)
         state = .running
+    }
+
+    /// The time now. If the Mac's clock was changed since the last reading,
+    /// the block's end moves with it, so the time left stays the same.
+    private func readClock() -> Date {
+        let date = clock()
+        let seconds = uptime()
+        if let last = lastReading, let end = blockEnd {
+            let jump = date.timeIntervalSince(last.date) - (seconds - last.uptime)
+            // Ignore tiny differences: the two clocks are read a moment apart.
+            if abs(jump) > Self.clockChangeThreshold {
+                blockEnd = end.addingTimeInterval(jump)
+            }
+        }
+        lastReading = (date, seconds)
+        return date
+    }
+
+    /// Smallest jump of the clock that counts as a change.
+    private static let clockChangeThreshold: TimeInterval = 2
+
+    /// Seconds since startup, sleep included (CLOCK_MONOTONIC on macOS).
+    nonisolated static func systemUptime() -> TimeInterval {
+        TimeInterval(clock_gettime_nsec_np(CLOCK_MONOTONIC)) / 1_000_000_000
     }
 
     private func move(toSessionOffset offset: TimeInterval, running: Bool) {
@@ -216,10 +272,17 @@ final class SessionTimer: ObservableObject {
         ticker = timer
 
         // Timers don't fire during sleep, so catch up as soon as we wake.
-        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+        observers.append(NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in self?.update() }
-        }
+        })
+        // The clock was changed by hand: correct the clock times at once
+        // rather than at the next tick.
+        observers.append(NotificationCenter.default.addObserver(
+            forName: .NSSystemClockDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.update() }
+        })
     }
 }

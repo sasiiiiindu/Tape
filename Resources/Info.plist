@@ -6,6 +6,9 @@
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>Tape</string>
+	<!-- Resources/AppIcon.icns, made from art/ by scripts/make-icon.sh. -->
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>Tape</string>
 	<key>CFBundleIdentifier</key>

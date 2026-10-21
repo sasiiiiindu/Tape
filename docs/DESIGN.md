@@ -1,11 +1,34 @@
 # Tape — visual spec
 Reference: docs/design/tape-mockup.png. Minimal, native, calm. One accent per mode.
 
-## Colours (dark first; light mode comes in Phase 8)
-focus #F2685A | break #8CC4A4 | long break #52A07C | text #F5F5F7 | secondary #A8A8B0
-track/button fill = white 10% | divider = white 9% | icon on accent #1C1C1E
-Panel background: the native MenuBarExtra window material. Never paint a
-solid colour over it.
+## Colours
+The panel follows the system's light or dark mode.
+
+|              | Dark      | Light     |
+|--------------|-----------|-----------|
+| focus        | #F2685A   | #D2412F   |
+| break        | #8CC4A4   | #2A8458   |
+| long break   | #52A07C   | #1D6644   |
+| text         | #F5F5F7   | #1D1D1F   |
+| secondary    | #A8A8B0   | #545459   |
+| track/button fill | white 10% | black 6% |
+| divider      | white 9%  | black 10% |
+| icon/text on accent | #1C1C1E | white |
+
+Panel background: the native popover window material. Never paint a solid
+colour over it.
+
+Light colours are checked against #E0E0E0, a deliberately dark stand-in for
+the light material (it varies with the wallpaper):
+- Text 12.8:1, secondary 5.7:1 (5.0:1 on the track fill of a settings row).
+  Both at least 4.5:1.
+- Accents are deeper than in dark mode so they read on a light background:
+  focus 3.5:1, break 3.5:1, long break 5.2:1 (at least 3:1 for shapes).
+- White on the accents: focus 4.6:1, break 4.6:1, long break 6.9:1, so the
+  "New session" text on them passes 4.5:1 too.
+
+The menu bar strip picks its block colours from the menu bar's appearance,
+not the system's: the light set on a light menu bar.
 
 ## Type
 - Countdown: .system(size: 56, weight: .light, design: .rounded),
@@ -16,7 +39,7 @@ solid colour over it.
 - Width 320 pt; padding 18 top, 20 sides, 16 bottom; 18 pt between sections.
 - Play/pause: 48 pt circle, accent fill, dark icon. Restart: 34 pt circle,
   track fill. Skip: text button, 28 pt tall, radius 8, track fill.
-- Mode colour changes animate over 0.6 s ease.
+- Mode colour changes animate over 0.6 s ease (instant with Reduce Motion).
 
 ## Long breaks
 A long break is a deeper, more saturated shade of the break green (#52A07C
@@ -44,6 +67,12 @@ still has about 5:1 contrast. Two more cues back up the colour: it is labelled
 - Motion: the strip moves continuously (redraw about once a second with a 1 s
   linear animation, or smoother if CPU stays low). Skip/restart slide the
   strip with a ~0.4 s ease.
+- Reduce Motion (System Settings > Accessibility > Display): the strip steps
+  once a minute instead of sliding, and Skip/restart jump.
+- VoiceOver reads the tape as one sentence: "Focus, round 2 of 4, 18 minutes
+  left, break at 7:50 PM" (plus "paused" or "not started").
+- Only the part of the session around the needle is drawn, so a 16-hour
+  session costs no more to draw than a 2-hour one.
 
 ## Settings page
 - Same width and padding as the timer page; 14 pt between sections.

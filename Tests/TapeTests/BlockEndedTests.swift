@@ -10,7 +10,8 @@ struct BlockEndedTests {
     let clock = FakeClock()
 
     func makeTimer(autoContinue: Bool = true) -> SessionTimer {
-        let timer = SessionTimer(plan: .standard, clock: { [clock] in clock.now }, live: false)
+        let timer = SessionTimer(plan: .standard, clock: { [clock] in clock.now },
+                                 uptime: { [clock] in clock.uptime }, live: false)
         timer.autoContinue = autoContinue
         return timer
     }

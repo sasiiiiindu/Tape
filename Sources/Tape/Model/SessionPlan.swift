@@ -2,7 +2,7 @@ import Foundation
 
 /// The ordered list of blocks in a session: Focus, Break, Focus, ... ending
 /// on the last Focus. If long breaks are on, every Nth break is a long one.
-struct SessionPlan: Equatable {
+struct SessionPlan: Codable, Equatable {
     let blocks: [Block]
     let rounds: Int
 
@@ -39,6 +39,18 @@ struct SessionPlan: Equatable {
     /// Time spent in Focus blocks, for the Settings preview.
     var focusDuration: TimeInterval {
         blocks.filter { $0.kind == .focus }.reduce(0) { $0 + $1.duration }
+    }
+
+    /// False for a plan that couldn't have been made by `init`, such as a
+    /// saved one that was edited by hand: no blocks, gaps, or empty blocks.
+    var isValid: Bool {
+        guard !blocks.isEmpty, rounds >= 1 else { return false }
+        var offset: TimeInterval = 0
+        for block in blocks {
+            guard block.start == offset, block.duration > 0 else { return false }
+            offset = block.end
+        }
+        return true
     }
 
     var hasLongBreak: Bool { blocks.contains { $0.kind == .longBreak } }

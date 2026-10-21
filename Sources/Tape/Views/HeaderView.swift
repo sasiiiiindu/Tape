@@ -7,13 +7,14 @@ struct HeaderView: View {
     let round: String
     let accent: Color
     let onSettings: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: Theme.Sizes.modeDotSpacing) {
             Circle()
                 .fill(accent)
                 .frame(width: Theme.Sizes.modeDot, height: Theme.Sizes.modeDot)
-                .animation(Theme.Motion.accentChange, value: accent)
+                .animation(Theme.Motion.accentChange(reduceMotion), value: accent)
             Text(title)
                 .font(Theme.Fonts.header)
                 .foregroundStyle(Theme.Colors.text)

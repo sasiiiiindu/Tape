@@ -34,10 +34,8 @@ final class MenuBarPanel: NSPanel {
         isReleasedWhenClosed = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         animationBehavior = .utilityWindow
-        // Dark only until light mode (Phase 8). Set on the window, not in
-        // SwiftUI, because the blur below is AppKit and SwiftUI's colour
-        // scheme doesn't reach it.
-        appearance = NSAppearance(named: .darkAqua)
+        // No appearance of its own: the panel follows the system's light or
+        // dark mode, and so do the blur below and every Theme colour.
 
         // System blur material, rounded with a mask, like the native menu bar window.
         let background = NSVisualEffectView()

@@ -71,9 +71,7 @@ struct TimerView: View {
 
     private var untilLine: String {
         if isComplete { return "Nice work." }
-        let at = TimeFormat.clock(timer.nextBlockStart)
-        guard let next = timer.nextBlock else { return "until done at \(at)" }
-        return "until \(next.kind.title.lowercased()) at \(at)"
+        return "until " + SessionText.upNext(timer.nextBlock, at: timer.nextBlockStart)
     }
 
     private var doneLine: String {

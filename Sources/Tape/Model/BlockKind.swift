@@ -1,5 +1,5 @@
 /// What a block of the session is for.
-enum BlockKind: Equatable {
+enum BlockKind: String, Codable, Equatable {
     case focus
     case `break`
     /// Takes the place of a break after every few rounds, if turned on.

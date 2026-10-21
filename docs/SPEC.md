@@ -67,5 +67,24 @@
   mm:ss countdown in monospaced digits.
 - With "Show countdown in menu bar" off, only the strip shows.
 
+## Quitting mid-session
+- The session in progress is saved as it runs and at quit. On the next
+  launch it comes back paused where it was (block, time left and its own
+  shape, even if Settings changed since). Press Start to carry on.
+- More than 12 hours later, or once the session is finished, Tape starts a
+  fresh session instead.
+
+## Time
+- Time left follows real time passing, including sleep. Changing the Mac's
+  clock by hand doesn't change it; the clock times ("break at 7:50 PM")
+  move to match the new clock.
+- A session can run past midnight; clock times just show the time.
+
+## Accessibility
+- The panel follows the system's light or dark mode.
+- Reduce Motion: the tape steps once a minute, and colour changes are instant.
+- VoiceOver: every button has a label. The tape and the menu bar item read
+  "Focus, round 2 of 4, 18 minutes left, break at 7:50 PM".
+
 ## Out of scope for now
 Statistics history, task lists, iCloud sync, Focus mode integration, iOS.

@@ -91,8 +91,10 @@ struct SettingsView: View {
             ToggleRow(title: "Launch at login", isOn: launchAtLogin, accent: accent,
                       note: loginItem.note, onNote: loginNoteAction)
             SettingsDivider()
+            // Usually because another app already uses the same keys. Kept
+            // short: the row has little room beside the shortcut's name.
             ToggleRow(title: "Open Tape with \(GlobalShortcut.title)", isOn: $settings.globalShortcut,
-                      accent: accent, note: shortcut.failed ? "Couldn't set up" : nil)
+                      accent: accent, note: shortcut.failed ? "In use" : nil)
         }
     }
 

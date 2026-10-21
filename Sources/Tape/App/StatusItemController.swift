@@ -118,6 +118,18 @@ final class StatusItemController: NSObject {
             button.imagePosition = position
         }
 
+        // VoiceOver reads the whole state, since the strip is only a picture
+        // and the countdown can be hidden.
+        let spoken = SessionText.spoken(state: timer.state, block: timer.currentBlock, next: timer.nextBlock,
+                                        rounds: timer.plan.rounds, remaining: timer.remaining,
+                                        nextStart: timer.nextBlockStart)
+        if button.accessibilityLabel() != "Tape" {
+            button.setAccessibilityLabel("Tape")
+        }
+        if button.accessibilityValue() as? String != spoken {
+            button.setAccessibilityValue(spoken)
+        }
+
         let strip = MenuBarStrip(plan: timer.plan, current: timer.blockIndex, remaining: timer.remaining)
         let onDark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         guard strip != drawnStrip || onDark != drawnOnDark || withText != drawnWithText else { return }

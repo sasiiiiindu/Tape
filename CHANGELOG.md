@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-21
+
+### Added
+
+- Light mode. Tape follows your Mac's appearance, with deeper colours on the
+  light panel so text and accents stay easy to read.
+- Reduce Motion support. With it on (System Settings > Accessibility >
+  Display), the tape steps once a minute instead of sliding, Skip and Restart
+  jump instead of sliding, and colour changes are instant.
+- VoiceOver reads every button, and the tape and the menu bar item as a
+  sentence: "Focus, round 2 of 4, 18 minutes left, break at 7:50 PM".
+- If Tape quits in the middle of a session (or your Mac restarts), the
+  session comes back paused where it was when Tape opens again. After 12
+  hours it starts fresh instead.
+- An app icon.
+- Runs on Intel Macs as well as Apple silicon.
+
+### Changed
+
+- If ⌃⌥T can't be turned on because another app uses it, Settings now says
+  "In use".
+
+### Fixed
+
+- Changing your Mac's clock by hand no longer changes the time left. Before,
+  setting it back froze the countdown, and setting it forward skipped blocks.
+- Settings rows no longer wrap onto a second line and get cut off when a note
+  shows next to a switch.
+- Very long sessions (up to 16 hours) draw on the tape as cheaply as short
+  ones.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added
@@ -70,7 +101,8 @@ First release.
 - Menu bar only, with no Dock icon. Quit from the panel's settings menu or
   with ⌘Q while the panel is open.
 
-[Unreleased]: https://github.com/sasiiiiindu/Tape/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/sasiiiiindu/Tape/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/sasiiiiindu/Tape/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/sasiiiiindu/Tape/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/sasiiiiindu/Tape/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sasiiiiindu/Tape/releases/tag/v0.1.0
