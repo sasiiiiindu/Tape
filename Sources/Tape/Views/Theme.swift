@@ -113,6 +113,20 @@ enum Theme {
         static let slowestFrame: TimeInterval = 1
     }
 
+    /// The mini session strip in the menu bar, left of mm:ss.
+    enum MenuBar {
+        static let stripWidth: CGFloat = 40
+        static let stripHeight: CGFloat = 4
+        static let gap: CGFloat = 1.5
+        static let cornerRadius: CGFloat = 2
+        /// Room between the strip and the digits.
+        static let stripToText: CGFloat = 5
+        /// Blocks still ahead are drawn in the menu bar's own text colour at
+        /// this opacity: white on a dark menu bar, black on a light one.
+        static let futureOpacityOnDark: Double = 0.30
+        static let futureOpacityOnLight: Double = 0.25
+    }
+
     enum Motion {
         /// Focus <-> break colour change.
         static let accentChange = Animation.easeInOut(duration: 0.6)

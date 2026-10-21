@@ -36,5 +36,7 @@ solid colour over it.
   strip with a ~0.4 s ease.
 
 ## Menu bar mini strip
-40 x 4 pt, 1.5 pt gaps, radius 2. Future blocks white 30%; finished blocks
-solid in their colour; current block fills left to right.
+40 x 4 pt, 1.5 pt gaps, radius 2. Future blocks white 30% (black 25% on a
+light menu bar); finished blocks solid in their colour; current block fills
+left to right. Then mm:ss in the menu bar font, monospaced digits.
+Idle: empty strip + the first block's length (25:00).
