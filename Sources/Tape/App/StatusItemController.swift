@@ -10,6 +10,7 @@ import Combine
 final class StatusItemController: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let panel: MenuBarPanel
+    private let updates: PanelUpdates
     private var titleSubscription: AnyCancellable?
 
     /// When the panel last closed. Clicking the menu bar item while the panel
@@ -18,7 +19,8 @@ final class StatusItemController: NSObject {
     private var lastClosed = Date.distantPast
 
     init(timer: SessionTimer) {
-        panel = MenuBarPanel(content: PanelView(timer: timer))
+        updates = PanelUpdates(timer: timer)
+        panel = MenuBarPanel(content: PanelView(timer: timer, updates: updates))
         super.init()
 
         if let button = statusItem.button {
@@ -38,6 +40,7 @@ final class StatusItemController: NSObject {
 
         panel.onClose = { [weak self] in
             self?.lastClosed = Date()
+            self?.updates.isOpen = false
             self?.statusItem.button?.highlight(false)
         }
     }
@@ -52,6 +55,8 @@ final class StatusItemController: NSObject {
 
     private func showPanel() {
         guard let button = statusItem.button, let buttonWindow = button.window else { return }
+
+        updates.isOpen = true
 
         // Centre the panel under the menu bar item, kept 8 pt inside the screen.
         panel.fitToContent()

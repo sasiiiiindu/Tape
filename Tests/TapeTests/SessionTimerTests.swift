@@ -203,4 +203,27 @@ struct SessionTimerTests {
         wait(timer, minutes: 2)          // whole 115-min session is under 2 min
         #expect(timer.state == .finished)
     }
+
+    @Test func elapsedAtADateBetweenTicks() {
+        let timer = makeTimer()
+        #expect(timer.elapsed(at: clock.now + 600) == 0)   // idle: doesn't move
+        timer.start()
+        wait(timer, minutes: 10)
+        // No tick since, but asking about 30 s later still moves on.
+        #expect(timer.elapsed(at: clock.now + 30) == 10 * 60 + 30)
+        // Past the end of the block it holds at the boundary until a tick.
+        #expect(timer.elapsed(at: clock.now + 3600) == 25 * 60)
+        timer.pause()
+        #expect(timer.elapsed(at: clock.now + 3600) == 10 * 60)
+        timer.skip()
+        timer.skip()
+        #expect(timer.elapsed(at: clock.now) == 30 * 60)
+    }
+
+    @Test func elapsedIsTheWholeSessionWhenFinished() {
+        let timer = makeTimer()
+        timer.start()
+        wait(timer, minutes: 200)
+        #expect(timer.elapsed(at: clock.now) == 115 * 60)
+    }
 }

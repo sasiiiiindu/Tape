@@ -6,7 +6,11 @@ import SwiftUI
 /// Every row keeps its height in every state: the window is only sized when
 /// it opens, so a row that grew or shrank while it's open would be clipped.
 struct PanelView: View {
-    @ObservedObject var timer: SessionTimer
+    let timer: SessionTimer
+    /// Redraws the panel when the timer changes, but only while it's open.
+    @ObservedObject var updates: PanelUpdates
+    /// Set by Skip, Restart and New session so the tape slides, not jumps.
+    @State private var slide: TapeSlide?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Sizes.sectionSpacing) {
@@ -25,7 +29,7 @@ struct PanelView: View {
                 Spacer()
                 if !isComplete {
                     HStack(spacing: Theme.Sizes.controlSpacing) {
-                        RestartButton(action: timer.restartBlock)
+                        RestartButton { slideTape(timer.restartBlock) }
                             .disabled(timer.state == .idle)
                         PlayPauseButton(
                             isRunning: timer.state == .running,
@@ -37,13 +41,13 @@ struct PanelView: View {
                 }
             }
 
-            TapePlaceholder()
+            TapeView(timer: timer, slide: slide, updates: updates)
 
             FooterView(trailing: doneLine) {
                 if isComplete {
-                    NewSessionButton(accent: accent, action: timer.newSession)
+                    NewSessionButton(accent: accent) { slideTape(timer.newSession) }
                 } else {
-                    SkipButton(title: skipTitle, action: timer.skip)
+                    SkipButton(title: skipTitle) { slideTape(timer.skip) }
                 }
             }
         }
@@ -64,6 +68,15 @@ struct PanelView: View {
 
     private var doneLine: String {
         isComplete ? "" : "Done at \(TimeFormat.clock(timer.sessionEnd))"
+    }
+
+    /// Run a button's action, then slide the tape from where it was showing
+    /// to the new position.
+    private func slideTape(_ action: () -> Void) {
+        let now = Date()
+        let from = TapeSlide.shownElapsed(of: timer, slide: slide, at: now)
+        action()
+        slide = TapeSlide(from: from, start: now)
     }
 
     private func playPause() {

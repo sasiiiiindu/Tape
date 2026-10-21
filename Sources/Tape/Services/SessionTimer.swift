@@ -57,6 +57,15 @@ final class SessionTimer: ObservableObject {
         state == .finished ? plan.totalDuration : currentBlock.end - remaining
     }
 
+    /// Session seconds done at `date`, which may fall between ticks. The tape
+    /// uses this to move smoothly instead of in half-second steps. Stays
+    /// inside the current block; the next tick moves on to the next one.
+    func elapsed(at date: Date) -> TimeInterval {
+        guard state == .running, let blockEnd else { return elapsedInSession }
+        let left = blockEnd.timeIntervalSince(date) * speed
+        return currentBlock.end - min(max(left, 0), currentBlock.duration)
+    }
+
     /// Clock time the next block starts (or the session ends, on the last block).
     var nextBlockStart: Date {
         now.addingTimeInterval(remaining / speed)
