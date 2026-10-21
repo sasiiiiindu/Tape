@@ -3,7 +3,8 @@ import Foundation
 
 /// Where each block sits in the 40 pt menu bar strip and how much of it is
 /// filled. Widths follow the blocks' durations. No drawing here, so it can be
-/// tested; MenuBarStripImage draws it.
+/// tested; MenuBarStripImage draws it. The Settings preview uses the same
+/// layout at a larger width.
 ///
 /// Finished blocks are full, the current block fills left to right, blocks
 /// still ahead are empty. That covers every timer state: idle is block 0 with
@@ -21,9 +22,10 @@ struct MenuBarStrip: Equatable {
     let segments: [Segment]
 
     /// `remaining` is the time left in block `current`.
-    init(plan: SessionPlan, current: Int, remaining: TimeInterval) {
-        let gaps = Theme.MenuBar.gap * CGFloat(plan.blocks.count - 1)
-        let pointsPerSecond = (Theme.MenuBar.stripWidth - gaps) / plan.totalDuration
+    init(plan: SessionPlan, current: Int, remaining: TimeInterval,
+         width: CGFloat = Theme.MenuBar.stripWidth, gap: CGFloat = Theme.MenuBar.gap) {
+        let gaps = gap * CGFloat(plan.blocks.count - 1)
+        let pointsPerSecond = (width - gaps) / plan.totalDuration
 
         var x: CGFloat = 0
         var segments: [Segment] = []
@@ -39,7 +41,7 @@ struct MenuBarStrip: Equatable {
             }
             segments.append(Segment(kind: block.kind, x: x, width: width,
                                     filled: (width * done * 2).rounded() / 2))
-            x += width + Theme.MenuBar.gap
+            x += width + gap
         }
         self.segments = segments
     }

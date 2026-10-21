@@ -8,12 +8,12 @@ import SwiftUI
 /// one-colour icon. Because of that macOS also won't adapt it to a light or
 /// dark menu bar, so the caller says which one it's drawing for.
 enum MenuBarStripImage {
-    static func make(_ strip: MenuBarStrip, onDarkMenuBar dark: Bool) -> NSImage {
+    /// `withTextGap` adds room on the right for the mm:ss that follows.
+    static func make(_ strip: MenuBarStrip, onDarkMenuBar dark: Bool, withTextGap: Bool) -> NSImage {
         let future = (dark ? NSColor.white : NSColor.black).withAlphaComponent(
             dark ? Theme.MenuBar.futureOpacityOnDark : Theme.MenuBar.futureOpacityOnLight
         )
-        // Extra width on the right is the gap before the digits.
-        let size = NSSize(width: Theme.MenuBar.stripWidth + Theme.MenuBar.stripToText,
+        let size = NSSize(width: Theme.MenuBar.stripWidth + (withTextGap ? Theme.MenuBar.stripToText : 0),
                           height: Theme.MenuBar.stripHeight)
 
         let image = NSImage(size: size, flipped: false) { _ in

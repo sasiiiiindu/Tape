@@ -6,6 +6,8 @@ enum Theme {
     enum Colors {
         static let focus = Color(hex: 0xF2685A)
         static let breakTime = Color(hex: 0x8CC4A4)
+        /// A deeper shade of the break colour, so long breaks stand out.
+        static let longBreak = Color(hex: 0x52A07C)
         static let text = Color(hex: 0xF5F5F7)
         static let secondary = Color(hex: 0xA8A8B0)
         /// Fill behind the restart and skip buttons.
@@ -18,6 +20,7 @@ enum Theme {
             switch kind {
             case .focus: focus
             case .break: breakTime
+            case .longBreak: longBreak
             }
         }
     }
@@ -33,6 +36,10 @@ enum Theme {
         static let restartIcon = Font.system(size: 14, weight: .semibold)
         static let settingsIcon = Font.system(size: 13, weight: .medium)
         static let tapeLabel = Font.system(size: 10, weight: .medium)
+        /// Settings rows: the name on the left, the value on the right.
+        static let row = Font.system(size: 13)
+        static let rowValue = Font.system(size: 13).monospacedDigit()
+        static let backIcon = Font.system(size: 13, weight: .semibold)
     }
 
     enum Sizes {
@@ -97,6 +104,8 @@ enum Theme {
         static let labelCenterY: CGFloat = 8
         /// Gap between a block's start and its label.
         static let labelInset: CGFloat = 4
+        /// Smallest space between one block's label and the next one's.
+        static let labelGap: CGFloat = 4
 
         static let needleWidth: CGFloat = 2
         static let needleHeight: CGFloat = 38
@@ -111,6 +120,26 @@ enum Theme {
         static let stepPerFrame: CGFloat = 0.25
         static let fastestFrame: TimeInterval = 1.0 / 60
         static let slowestFrame: TimeInterval = 1
+    }
+
+    /// The settings page that slides in from the header's settings button.
+    enum Settings {
+        /// Gap between the header, the groups and the preview.
+        static let sectionSpacing: CGFloat = 14
+        static let rowHeight: CGFloat = 32
+        static let rowPadding: CGFloat = 10
+        static let groupRadius: CGFloat = 8
+        /// Space between a stepper's value and its arrows.
+        static let valueToControl: CGFloat = 6
+        /// Room for the widest value, "Every 4 rounds", so the arrows line up.
+        static let valueWidth: CGFloat = 100
+        static let backButton: CGFloat = 22
+
+        /// The preview of the planned session under the steppers.
+        static let previewWidth: CGFloat = 280
+        static let previewHeight: CGFloat = 6
+        static let previewGap: CGFloat = 2
+        static let previewToCaption: CGFloat = 8
     }
 
     /// The mini session strip in the menu bar, left of mm:ss.
@@ -132,6 +161,9 @@ enum Theme {
         static let accentChange = Animation.easeInOut(duration: 0.6)
         /// Skip, Restart and New session slide the tape instead of jumping.
         static let tapeSlide: TimeInterval = 0.4
+        /// The timer and settings pages sliding past each other, and the
+        /// panel growing or shrinking to fit.
+        static let pageSlide: TimeInterval = 0.3
     }
 }
 

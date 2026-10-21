@@ -1,94 +1,51 @@
 import SwiftUI
 
-/// Contents of the drop-down panel: header, countdown and controls, tape,
-/// footer. Sizes and colours live in Theme.
+/// Contents of the drop-down panel: the timer page, or the settings page
+/// slid in over it from the right.
 ///
-/// Every row keeps its height in every state: the window is only sized when
-/// it opens, so a row that grew or shrank while it's open would be clipped.
+/// The window (StatusItemController) resizes to fit each page, growing and
+/// shrinking from the bottom while the pages slide.
 struct PanelView: View {
     let timer: SessionTimer
+    let settings: SettingsStore
     /// Redraws the panel when the timer changes, but only while it's open.
     @ObservedObject var updates: PanelUpdates
-    /// Set by Skip, Restart and New session so the tape slides, not jumps.
-    @State private var slide: TapeSlide?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Sizes.sectionSpacing) {
-            HeaderView(
-                title: isComplete ? "Done" : timer.currentBlock.kind.title,
-                round: "Round \(timer.currentBlock.round) of \(timer.plan.rounds)",
-                accent: accent
-            )
-
-            HStack(alignment: .center) {
-                CountdownView(
-                    time: TimeFormat.minutesSeconds(timer.remaining),
-                    subline: untilLine,
-                    isComplete: isComplete
-                )
-                Spacer()
-                if !isComplete {
-                    HStack(spacing: Theme.Sizes.controlSpacing) {
-                        RestartButton { slideTape(timer.restartBlock) }
-                            .disabled(timer.state == .idle)
-                        PlayPauseButton(
-                            isRunning: timer.state == .running,
-                            playLabel: timer.state == .paused ? "Resume" : "Start",
-                            accent: accent,
-                            action: playPause
-                        )
-                    }
-                }
-            }
-
-            TapeView(timer: timer, slide: slide, updates: updates)
-
-            FooterView(trailing: doneLine) {
-                if isComplete {
-                    NewSessionButton(accent: accent) { slideTape(timer.newSession) }
-                } else {
-                    SkipButton(title: skipTitle) { slideTape(timer.skip) }
-                }
+        ZStack(alignment: .top) {
+            switch updates.page {
+            case .timer:
+                TimerView(timer: timer, updates: updates) { show(.settings) }
+                    .pinnedToTop()
+                    .transition(.move(edge: .leading))
+            case .settings:
+                SettingsView(
+                    settings: settings,
+                    sessionInProgress: timer.state != .idle,
+                    accent: Theme.Colors.accent(for: timer.currentBlock.kind)
+                ) { show(.timer) }
+                    .pinnedToTop()
+                    .transition(.move(edge: .trailing))
             }
         }
-        .padding(Theme.Sizes.panelPadding)
-        .frame(width: Theme.Sizes.panelWidth, alignment: .leading)
+        .frame(width: Theme.Sizes.panelWidth)
+        .clipped()
     }
 
-    private var isComplete: Bool { timer.state == .finished }
-
-    private var accent: Color { Theme.Colors.accent(for: timer.currentBlock.kind) }
-
-    private var untilLine: String {
-        if isComplete { return "Nice work." }
-        let at = TimeFormat.clock(timer.nextBlockStart)
-        guard let next = timer.nextBlock else { return "until done at \(at)" }
-        return "until \(next.kind.title.lowercased()) at \(at)"
-    }
-
-    private var doneLine: String {
-        isComplete ? "" : "Done at \(TimeFormat.clock(timer.sessionEnd))"
-    }
-
-    /// Run a button's action, then slide the tape from where it was showing
-    /// to the new position.
-    private func slideTape(_ action: () -> Void) {
-        let now = Date()
-        let from = TapeSlide.shownElapsed(of: timer, slide: slide, at: now)
-        action()
-        slide = TapeSlide(from: from, start: now)
-    }
-
-    private func playPause() {
-        if timer.state == .running {
-            timer.pause()
-        } else {
-            timer.start()
+    private func show(_ page: PanelPage) {
+        withAnimation(.easeInOut(duration: Theme.Motion.pageSlide)) {
+            updates.page = page
         }
     }
+}
 
-    private var skipTitle: String {
-        guard let next = timer.nextBlock else { return "Finish" }
-        return "Skip to \(next.kind.title.lowercased())"
+private extension View {
+    /// Lays a page out at its natural height at the top of the window,
+    /// whatever the window's height is right now. Every page then takes up
+    /// the whole window, so swapping pages never changes the content's size;
+    /// only the sideways slide animates, and the window resizes around it.
+    func pinnedToTop() -> some View {
+        fixedSize(horizontal: false, vertical: true)
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
     }
 }

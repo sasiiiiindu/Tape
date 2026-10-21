@@ -6,6 +6,7 @@ struct HeaderView: View {
     let title: String
     let round: String
     let accent: Color
+    let onSettings: () -> Void
 
     var body: some View {
         HStack(spacing: Theme.Sizes.modeDotSpacing) {
@@ -23,7 +24,7 @@ struct HeaderView: View {
                 Text(round)
                     .font(Theme.Fonts.secondary)
                     .foregroundStyle(Theme.Colors.secondary)
-                SettingsMenu()
+                SettingsButton(action: onSettings)
             }
         }
     }

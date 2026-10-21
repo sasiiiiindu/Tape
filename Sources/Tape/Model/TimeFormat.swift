@@ -11,4 +11,12 @@ enum TimeFormat {
     static func clock(_ date: Date) -> String {
         date.formatted(date: .omitted, time: .shortened)
     }
+
+    /// A length in hours and minutes: "1h 55m", "45m", "2h".
+    static func hoursMinutes(_ seconds: TimeInterval) -> String {
+        let minutes = max(0, Int((seconds / 60).rounded()))
+        let (h, m) = (minutes / 60, minutes % 60)
+        if h == 0 { return "\(m)m" }
+        return m == 0 ? "\(h)h" : "\(h)h \(m)m"
+    }
 }

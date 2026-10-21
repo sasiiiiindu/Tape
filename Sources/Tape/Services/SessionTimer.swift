@@ -15,12 +15,19 @@ final class SessionTimer: ObservableObject {
     /// The time of the last update. Refreshed every tick in every state, so
     /// clock times keep moving while paused (pausing pushes them later).
     @Published private(set) var now: Date
+    /// The blocks of this session. Only changes between sessions.
+    @Published private(set) var plan: SessionPlan
 
-    let plan: SessionPlan
+    /// When a block ends: true starts the next one straight away, false stops
+    /// at the start of the next one, paused, and waits for Start.
+    var autoContinue = true
     /// Session seconds per real second. 1 except in fast mode.
     let speed: Double
 
     private let clock: () -> Date
+    /// What the next session will look like. Settings change this; it only
+    /// becomes `plan` while idle, so a session never changes shape mid-way.
+    private var nextPlan: SessionPlan
     /// Real moment the current block ends. Only set while running.
     private var blockEnd: Date?
     private var ticker: Timer?
@@ -35,6 +42,7 @@ final class SessionTimer: ObservableObject {
         live: Bool = true
     ) {
         self.plan = plan
+        self.nextPlan = plan
         self.speed = speed
         self.clock = clock
         self.remaining = plan.blocks[0].duration
@@ -120,12 +128,23 @@ final class SessionTimer: ObservableObject {
         move(toSessionOffset: next.start, running: state == .running)
     }
 
+    /// Back to idle at the start of a session, using the latest settings.
     func newSession() {
+        plan = nextPlan
         blockEnd = nil
         blockIndex = 0
         remaining = currentBlock.duration
         state = .idle
         now = clock()
+    }
+
+    /// Use `plan` for the next session. Applies at once while idle; during a
+    /// session (or once it's finished) it waits for New session.
+    func setNextPlan(_ plan: SessionPlan) {
+        nextPlan = plan
+        if state == .idle && plan != self.plan {
+            newSession()
+        }
     }
 
     // MARK: - Timekeeping
@@ -139,10 +158,14 @@ final class SessionTimer: ObservableObject {
         let left = blockEnd.timeIntervalSince(now) * speed
         if left > 0 {
             remaining = min(left, currentBlock.duration)
-        } else {
+        } else if autoContinue {
             // The block is over. Carry the overrun on into the following
             // blocks; after a long sleep that can be several of them.
             move(toSessionOffset: currentBlock.end - left, running: true)
+        } else {
+            // Stop at the start of the next block, however long ago this one
+            // ended (even after a long sleep).
+            move(toSessionOffset: currentBlock.end, running: false)
         }
     }
 

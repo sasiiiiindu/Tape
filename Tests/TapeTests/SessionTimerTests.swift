@@ -12,9 +12,14 @@ final class FakeClock {
 struct SessionTimerTests {
     let clock = FakeClock()
 
-    func makeTimer(speed: Double = 1) -> SessionTimer {
-        SessionTimer(plan: .standard, speed: speed, clock: { [clock] in clock.now }, live: false)
+    func makeTimer(speed: Double = 1, autoContinue: Bool = true) -> SessionTimer {
+        let timer = SessionTimer(plan: .standard, speed: speed, clock: { [clock] in clock.now }, live: false)
+        timer.autoContinue = autoContinue
+        return timer
     }
+
+    /// 50 min focus, 10 min break, 2 rounds.
+    let shortPlan = SessionPlan(focus: 50 * 60, breakLength: 10 * 60, rounds: 2)
 
     /// Move the fake clock and let the timer catch up, like a tick would.
     func wait(_ timer: SessionTimer, minutes: Double) {
@@ -225,5 +230,92 @@ struct SessionTimerTests {
         timer.start()
         wait(timer, minutes: 200)
         #expect(timer.elapsed(at: clock.now) == 115 * 60)
+    }
+
+    // MARK: - Auto-continue off
+
+    @Test func withoutAutoContinueStopsAtTheNextBlock() {
+        let timer = makeTimer(autoContinue: false)
+        timer.start()
+        wait(timer, minutes: 27)
+        #expect(timer.state == .paused)
+        #expect(timer.blockIndex == 1)
+        #expect(timer.remaining == 5 * 60)   // the break hasn't started
+        wait(timer, minutes: 10)
+        #expect(timer.remaining == 5 * 60)
+
+        timer.start()
+        wait(timer, minutes: 2)
+        #expect(timer.state == .running)
+        #expect(timer.remaining == 3 * 60)
+    }
+
+    @Test func withoutAutoContinueStopsAtTheFirstBoundaryAfterSleep() {
+        let timer = makeTimer(autoContinue: false)
+        timer.start()
+        wait(timer, minutes: 62)   // would be 2 min into Focus 3 with auto-continue
+        #expect(timer.state == .paused)
+        #expect(timer.blockIndex == 1)
+        #expect(timer.remaining == 5 * 60)
+    }
+
+    @Test func withoutAutoContinueTheLastBlockStillFinishes() {
+        let timer = makeTimer(autoContinue: false)
+        timer.start()
+        for _ in 0..<6 { timer.skip() }
+        wait(timer, minutes: 30)
+        #expect(timer.state == .finished)
+    }
+
+    @Test func turningAutoContinueOffMidBlockAppliesAtItsEnd() {
+        let timer = makeTimer()
+        timer.start()
+        wait(timer, minutes: 10)
+        timer.autoContinue = false
+        wait(timer, minutes: 20)
+        #expect(timer.state == .paused)
+        #expect(timer.blockIndex == 1)
+    }
+
+    // MARK: - Changing the plan
+
+    @Test func newPlanAppliesAtOnceWhenIdle() {
+        let timer = makeTimer()
+        timer.setNextPlan(shortPlan)
+        #expect(timer.plan == shortPlan)
+        #expect(timer.state == .idle)
+        #expect(timer.blockIndex == 0)
+        #expect(timer.remaining == 50 * 60)
+    }
+
+    @Test func newPlanWaitsWhileRunning() {
+        let timer = makeTimer()
+        timer.start()
+        wait(timer, minutes: 10)
+        timer.setNextPlan(shortPlan)
+        #expect(timer.plan == .standard)
+        #expect(timer.remaining == 15 * 60)
+        wait(timer, minutes: 17)
+        #expect(timer.currentBlock.duration == 5 * 60)   // still the old break
+
+        timer.newSession()
+        #expect(timer.plan == shortPlan)
+        #expect(timer.remaining == 50 * 60)
+    }
+
+    @Test func newPlanWaitsWhilePausedAndFinished() {
+        let timer = makeTimer()
+        timer.start()
+        timer.pause()
+        timer.setNextPlan(shortPlan)
+        #expect(timer.plan == .standard)
+
+        timer.resume()
+        wait(timer, minutes: 200)
+        #expect(timer.state == .finished)
+        timer.setNextPlan(SessionPlan(focus: 60, breakLength: 60, rounds: 1))
+        #expect(timer.plan == .standard)
+        timer.newSession()
+        #expect(timer.plan.totalDuration == 60)   // the latest one wins
     }
 }

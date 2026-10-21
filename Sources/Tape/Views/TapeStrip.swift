@@ -77,14 +77,33 @@ struct TapeStrip: View, Equatable {
         context.fill(Path(roundedRect: rect, cornerRadius: width / 2), with: .color(color.opacity(shown)))
     }
 
+    /// Draws the longest label that fits before the next block's label, or
+    /// none, so short blocks don't run into their neighbours. The last block
+    /// has the strip's end padding to spare.
     private func drawLabel(_ block: Block, index: Int, in context: GraphicsContext) {
-        let title = block.kind == .focus ? "Focus \(block.round)" : block.kind.title
-        var label = context.resolve(Text(title).font(Theme.Fonts.tapeLabel))
-        label.shading = .color(index == current ? Theme.Colors.text : Theme.Colors.secondary)
-        context.draw(
-            label,
-            at: CGPoint(x: Self.x(at: block.start) + Theme.Tape.labelInset, y: Theme.Tape.labelCenterY),
-            anchor: .leading
-        )
+        let isLast = index == plan.blocks.count - 1
+        let room = isLast ? .infinity : block.duration / 60 * Theme.Tape.minuteWidth - Theme.Tape.labelGap
+        for title in Self.labels(for: block) {
+            var label = context.resolve(Text(title).font(Theme.Fonts.tapeLabel))
+            guard label.measure(in: CGSize(width: CGFloat.infinity, height: .infinity)).width <= room else {
+                continue
+            }
+            label.shading = .color(index == current ? Theme.Colors.text : Theme.Colors.secondary)
+            context.draw(
+                label,
+                at: CGPoint(x: Self.x(at: block.start) + Theme.Tape.labelInset, y: Theme.Tape.labelCenterY),
+                anchor: .leading
+            )
+            return
+        }
+    }
+
+    /// Longest first.
+    private static func labels(for block: Block) -> [String] {
+        switch block.kind {
+        case .focus: ["Focus \(block.round)", "\(block.round)"]
+        case .break: ["Break"]
+        case .longBreak: ["Long break", "Long"]
+        }
     }
 }
