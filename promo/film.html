@@ -11,6 +11,11 @@ canvas { display:block; }
 <body>
 <canvas id="c" width="1920" height="1080"></canvas>
 <script>
+// ---------- format ----------
+// one film, two shapes: 16:9 by default, 9:16 for stories with film.html?vertical
+const VERT = new URLSearchParams(location.search).has('vertical');
+const FW = VERT ? 1080 : 1920, FH = VERT ? 1920 : 1080;
+
 // ---------- palette (light column of DESIGN.md) ----------
 const C = {
   bg: '#FBFBFD', panel: '#FFFFFF',
@@ -65,18 +70,18 @@ let T_CROSS = 0;
 const Tat = t => TT[clamp(Math.round(t * FPS_INT), 0, TT.length - 1)];
 
 // ---------- canvas helpers ----------
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const cv = document.getElementById('c'); cv.width = FW; cv.height = FH; const ctx = cv.getContext('2d');
 const off = document.createElement('canvas'); off.width = 1920; off.height = 600;
 const ox = off.getContext('2d');
-const lay = document.createElement('canvas'); lay.width = 1920; lay.height = 1080;
+const lay = document.createElement('canvas'); lay.width = FW; lay.height = FH;
 const lx = lay.getContext('2d');
 let ICON = new Image(); ICON.src = 'icon-1024.png';
 // each scene draws into its own layer so transitions can blur, scale and cross-fade it
-const mkLayer = () => { const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; return [c, c.getContext('2d')]; };
+const mkLayer = () => { const c = document.createElement('canvas'); c.width = FW; c.height = FH; return [c, c.getContext('2d')]; };
 const LAYERS = {};
 const layerFor = id => LAYERS[id] || (LAYERS[id] = mkLayer());
 const TMP = mkLayer();
-const clearLayer = (g, m) => { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 1920, 1080); g.globalAlpha = 1; g.filter = 'none'; if (m) g.setTransform(m); };
+const clearLayer = (g, m) => { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, FW, FH); g.globalAlpha = 1; g.filter = 'none'; if (m) g.setTransform(m); };
 // film grain: a few seeded noise tiles, cycled so the grain lives without crawling
 let SEED = 11; const rnd = () => { SEED = (SEED + 0x6D2B79F5) | 0; let x = Math.imul(SEED ^ SEED >>> 15, 1 | SEED); x ^= x + Math.imul(x ^ x >>> 7, 61 | x); return ((x ^ x >>> 14) >>> 0) / 4294967296; };
 const GRAIN = [0, 1, 2, 3].map(() => {
@@ -298,8 +303,8 @@ function drawMenuBar(g, T, alpha, slide) {
   if (alpha <= 0) return { sx: 0, sy: 0 };
   const m = 2, H = 24 * m, y = -H * (1 - slide);
   g.save(); g.globalAlpha *= alpha;
-  g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(0, y, 1920, H);
-  g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, y + H, 1920, 1);
+  g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(0, y, FW, H);
+  g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, y + H, FW, 1);
   const cy = y + H / 2;
   // left: generic menus
   text(g, 'File', 56, cy, { size: 13 * m, weight: 500, base: 'middle', alpha: .9 });
@@ -308,8 +313,8 @@ function drawMenuBar(g, T, alpha, slide) {
   // right: clock
   const now = WALL0 + 60 + T - 55; // wall clock drifts with the session
   const clk = `Tue 20 Oct  ${clock(now)}`;
-  text(g, clk, 1920 - 40, cy, { size: 13 * m, weight: 500, base: 'middle', align: 'right' });
-  let rx = 1920 - 40 - tw(g, clk, 13 * m, 500) - 44;
+  text(g, clk, FW - 40, cy, { size: 13 * m, weight: 500, base: 'middle', align: 'right' });
+  let rx = FW - 40 - tw(g, clk, 13 * m, 500) - 44;
   // status item: mini strip + countdown
   const b = blockAt(T);
   const cdW = tab(g, '00:00', -9999, 0, 13 * m, 500, 'SFT', C.text, 0);
@@ -348,7 +353,7 @@ function slotsAt(t) {
 }
 function drawSettings(g, t) {
   g.save();
-  caption(g, 960, 330, 'Your own rhythm.', null, t, 31.8, 40.3, { align: 'center' });
+  caption(g, FW / 2, VERT ? 560 : 330, 'Your own rhythm.', null, t, 31.8, 40.3, { align: 'center' });
   // values row
   const cols = [
     ['Focus', ['25 min'], []],
@@ -356,21 +361,24 @@ function drawSettings(g, t) {
     ['Rounds', ['4', '6'], [35.0]],
     ['Long break', ['Off', 'Every 2'], [37.0]],
   ];
-  const X0 = 360, W = 1200, ROWY = 520;
+  // one row of four values, or a 2 x 2 grid when vertical
+  const X0 = VERT ? 60 : 360, W = VERT ? 960 : 1200, ROWY = VERT ? 760 : 520;
+  const LS = VERT ? 30 : 24, VS = VERT ? 72 : 52, VY = VERT ? 84 : 60, DY = VERT ? 30 : 22;
   cols.forEach(([lab, vals, at], i) => {
-    const cx = X0 + W * (i + .5) / 4;
+    const cx = VERT ? FW / 2 + (i % 2 - .5) * 440 : X0 + W * (i + .5) / 4;
+    const ry = VERT ? ROWY + Math.floor(i / 2) * 220 : ROWY;
     const k0 = fio(t, 32.9 + i * .12, 99, .8);
-    text(g, lab, cx, ROWY, { size: 24, fam: 'SFS', weight: 500, color: C.sec, align: 'center', alpha: k0 });
+    text(g, lab, cx, ry, { size: LS, fam: 'SFS', weight: 500, color: C.sec, align: 'center', alpha: k0 });
     vals.forEach((v, j) => {
       const inK = j === 0 ? 1 : eout5(seg(t, at[j - 1] + .2, at[j - 1] + .8));
       const outK = j + 1 < vals.length ? eio(seg(t, at[j], at[j] + .25)) : 0;
       const a = inK * (1 - outK) * k0;
-      const dy = (1 - inK) * 22 - outK * 22;
-      text(g, v, cx, ROWY + 60 + dy, { size: 52, weight: 300, fam: 'SFD', align: 'center', alpha: a, track: -.3 });
+      const dy = (1 - inK) * DY - outK * DY;
+      text(g, v, cx, ry + VY + dy, { size: VS, weight: 300, fam: 'SFD', align: 'center', alpha: a, track: -.3 });
     });
   });
   // strip
-  const S = 4, SY = 680, SH = 6 * S, GAP = 2 * S;
+  const S = 4, SY = VERT ? 1180 : 680, SH = 6 * S, GAP = 2 * S;
   const sl = slotsAt(t);
   const gaps = sl.reduce((s, x, i) => s + (i ? GAP * x.p : 0), 0);
   const sum = sl.reduce((s, x) => s + x.d, 0);
@@ -393,7 +401,7 @@ function drawSettings(g, t) {
   totals.forEach((str, j) => {
     const inK = j === 0 ? eout(seg(t, 33.6, 34.4)) : eout5(seg(t, tAt[j - 1] + .2, tAt[j - 1] + .8));
     const outK = j < 2 ? eio(seg(t, tAt[j], tAt[j] + .3)) : 0;
-    text(g, str, 960, SY + SH + 64 + (1 - inK) * 14, { size: 28, fam: 'SFS', weight: 450, color: C.sec, align: 'center', alpha: inK * (1 - outK) });
+    text(g, str, FW / 2, SY + SH + (VERT ? 76 : 64) + (1 - inK) * 14, { size: VERT ? 34 : 28, fam: 'SFS', weight: 450, color: C.sec, align: 'center', alpha: inK * (1 - outK) });
   });
   g.restore();
 }
@@ -404,23 +412,24 @@ function glow(g, x, y, r, c, a) {
   if (a <= .002) return;
   const gr = g.createRadialGradient(x, y, 0, x, y, r);
   gr.addColorStop(0, rgba(c, a)); gr.addColorStop(.45, rgba(c, a * .4)); gr.addColorStop(1, rgba(c, 0));
-  g.fillStyle = gr; g.fillRect(0, 0, 1920, 1080);
+  g.fillStyle = gr; g.fillRect(0, 0, FW, FH);
 }
 function backdrop(g, t) {
-  g.fillStyle = C.bg; g.fillRect(0, 0, 1920, 1080);
+  g.fillStyle = C.bg; g.fillRect(0, 0, FW, FH);
   const X = T_CROSS;
   const sF = keys(t, [[1.2, 0], [4.5, 1], [X, 1], [X + 1.4, 0], [31.2, 0], [33, .6], [39.4, .6], [40.6, 1], [46.4, 1], [48, .7]]);
   const sB = keys(t, [[X, 0], [X + 1.4, 1], [31.2, 1], [33, .6], [39.4, .6], [40.6, 0], [46.4, 0], [48, .55]]);
   const sC = keys(t, [[0, .4], [3, 1]]);
-  glow(g, 560 + 90 * Math.sin(t * .11), 330 + 60 * Math.cos(t * .085), 1150, [240, 120, 96], .15 * sF);
-  glow(g, 1380 + 90 * Math.cos(t * .1), 760 + 50 * Math.sin(t * .09), 1150, [80, 190, 140], .15 * sB);
-  glow(g, 1520 + 60 * Math.sin(t * .07), 120, 900, [140, 160, 255], .07 * sC);
+  const [f, b, c] = VERT ? [[300, 640], [800, 1380], [860, 160]] : [[560, 330], [1380, 760], [1520, 120]];
+  glow(g, f[0] + 90 * Math.sin(t * .11), f[1] + 60 * Math.cos(t * .085), 1150, [240, 120, 96], .15 * sF);
+  glow(g, b[0] + 90 * Math.cos(t * .1), b[1] + 50 * Math.sin(t * .09), 1150, [80, 190, 140], .15 * sB);
+  glow(g, c[0] + 60 * Math.sin(t * .07), c[1], 900, [140, 160, 255], .07 * sC);
 }
 function finish(g, t) {
-  const v = g.createRadialGradient(960, 540, 520, 960, 540, 1280);
+  const v = g.createRadialGradient(FW / 2, FH / 2, 520, FW / 2, FH / 2, 1280);
   v.addColorStop(0, 'rgba(20,20,48,0)'); v.addColorStop(1, 'rgba(20,20,48,0.08)');
-  g.fillStyle = v; g.fillRect(0, 0, 1920, 1080);
-  g.save(); g.globalAlpha = .5; g.fillStyle = g.createPattern(GRAIN[Math.floor(t * 24) % 4], 'repeat'); g.fillRect(0, 0, 1920, 1080); g.restore();
+  g.fillStyle = v; g.fillRect(0, 0, FW, FH);
+  g.save(); g.globalAlpha = .5; g.fillStyle = g.createPattern(GRAIN[Math.floor(t * 24) % 4], 'repeat'); g.fillRect(0, 0, FW, FH); g.restore();
 }
 
 // ---------- camera ----------
@@ -431,7 +440,7 @@ function shot(id, t, fn, { inA = null, inB = null, outA = null, outB = null, z =
   if (kin <= 0 || kout >= 1) return;
   const zz = z(t) * lerp(.955, 1, eout(kin)) * lerp(1, 1.07, kout);
   const [c, g] = layerFor(id);
-  clearLayer(g, new DOMMatrix([zz, 0, 0, zz, 960 * (1 - zz), 540 * (1 - zz)]));
+  clearLayer(g, new DOMMatrix([zz, 0, 0, zz, FW / 2 * (1 - zz), FH / 2 * (1 - zz)]));
   fn(g);
   const blur = (1 - kin) * 16 + kout * 20;
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = kin * (1 - kout);
@@ -441,8 +450,9 @@ function shot(id, t, fn, { inA = null, inB = null, outA = null, outB = null, z =
 
 // ---------- scenes ----------
 function sceneHero(g, t, T) {
-  const HS = 3.6, HW = 400, hero = { x: 960 - HW * HS / 2, y: 540 - 35 * HS - 30, s: HS, W: HW, needle: HW / 2 };
-  const PS = 2.3, PX = 1040, PY = 197;
+  const HS = VERT ? 3.2 : 3.6, HW = VERT ? 320 : 400;
+  const hero = { x: FW / 2 - HW * HS / 2, y: FH / 2 - 35 * HS - (VERT ? 140 : 30), s: HS, W: HW, needle: HW / 2 };
+  const [PS, PX, PY] = VERT ? [3.0, 60, 700] : [2.3, 1040, 197];
   const pan = { x: PX + 20 * PS, y: PY + 150 * PS, s: PS, W: 280, needle: 84 };
   const mk = eio(seg(t, 12.0, 13.5));
   const tp = {
@@ -460,25 +470,34 @@ function sceneHero(g, t, T) {
   g.restore();
   drawTape(g, tp);
 
-  caption(g, 960, 820, 'Time, laid out.', null, t, 2.6, 5.6, { align: 'center' });
-  caption(g, 960, 820, 'Minutes, sliding past a needle.', null, t, 6.0, 11.6, { align: 'center' });
-  caption(g, 170, 520, 'Everything,', null, t, 13.6, 20.9, { size: 80 });
-  caption(g, 170, 612, 'at a glance.', null, t, 13.85, 20.9, { size: 80 });
-  caption(g, 170, 520, 'Focus.', null, t, 21.6, 25.8, { size: 80 });
-  caption(g, 170, 612, 'Then breathe.', null, t, 22.0, 25.8, { size: 80 });
+  if (VERT) {
+    caption(g, 540, 1170, 'Time, laid out.', null, t, 2.6, 5.6, { align: 'center' });
+    caption(g, 540, 1170, 'Minutes, sliding', null, t, 6.0, 11.6, { align: 'center' });
+    caption(g, 540, 1268, 'past a needle.', null, t, 6.15, 11.6, { align: 'center' });
+  } else {
+    caption(g, 960, 820, 'Time, laid out.', null, t, 2.6, 5.6, { align: 'center' });
+    caption(g, 960, 820, 'Minutes, sliding past a needle.', null, t, 6.0, 11.6, { align: 'center' });
+  }
+  // two-line headlines beside the panel, or above it when vertical
+  const [hx, hy] = VERT ? [64, 500] : [170, 520];
+  caption(g, hx, hy, 'Everything,', null, t, 13.6, 20.9, { size: 80 });
+  caption(g, hx, hy + 92, 'at a glance.', null, t, 13.85, 20.9, { size: 80 });
+  caption(g, hx, hy, 'Focus.', null, t, 21.6, 25.8, { size: 80 });
+  caption(g, hx, hy + 92, 'Then breathe.', null, t, 22.0, 25.8, { size: 80 });
 }
 
 // an original soft pastel desktop, so the menu bar has somewhere to live
 function wallpaper(g, a, z) {
   if (a <= 0) return;
   g.save(); g.globalAlpha *= a;
-  g.translate(960, 540); g.scale(z, z); g.translate(-960, -540);
-  const lg = g.createLinearGradient(0, 0, 1920, 1080);
+  g.translate(FW / 2, FH / 2); g.scale(z, z); g.translate(-FW / 2, -FH / 2);
+  const lg = g.createLinearGradient(0, 0, FW, FH);
   lg.addColorStop(0, 'rgb(253,241,234)'); lg.addColorStop(1, 'rgb(230,239,252)');
-  g.fillStyle = lg; g.fillRect(-200, -200, 2320, 1480);
-  glow(g, 420, 260, 900, [250, 178, 152], .55);
-  glow(g, 1560, 860, 950, [150, 214, 188], .5);
-  glow(g, 1420, 120, 760, [196, 190, 250], .45);
+  g.fillStyle = lg; g.fillRect(-200, -200, FW + 400, FH + 400);
+  const [a1, a2, a3] = VERT ? [[240, 420], [860, 1560], [820, 120]] : [[420, 260], [1560, 860], [1420, 120]];
+  glow(g, a1[0], a1[1], 900, [250, 178, 152], .55);
+  glow(g, a2[0], a2[1], 950, [150, 214, 188], .5);
+  glow(g, a3[0], a3[1], 760, [196, 190, 250], .45);
   g.restore();
 }
 
@@ -491,12 +510,14 @@ function sceneMenu(g, t, T) {
   g.save(); const info = drawMenuBar(g, T, 0.0001, 1); g.restore();
   const P = { x: (info.sx + info.ex) / 2, y: 24 };
   const Z = lerp(1, 3.6, zk);
-  const Pd = { x: lerp(P.x, 960, zk), y: lerp(P.y, 360, zk) };
+  // vertical: sit a little left of centre so the clock's first word is whole, not cut mid-letter
+  const Pd = { x: lerp(P.x, VERT ? FW / 2 - 110 : FW / 2, zk), y: lerp(P.y, VERT ? 760 : 360, zk) };
   g.save();
   g.translate(Pd.x, Pd.y); g.scale(Z, Z); g.translate(-P.x, -P.y);
   // the same panel glides up and shrinks into place under the status item
   const mv = eio(seg(t, 25.9, 27.0)), pout = eio(seg(t, 27.3, 27.9));
-  const ps = lerp(2.3, 1.6, mv), ppx = lerp(1040, P.x - 160 * 1.6, mv), ppy = lerp(197, 24 * 2 + 10, mv);
+  const [PS, PX, PY] = VERT ? [3.0, 60, 700] : [2.3, 1040, 197]; // where the hero left the panel
+  const ps = lerp(PS, 1.6, mv), ppx = lerp(PX, P.x - 160 * 1.6, mv), ppy = lerp(PY, 24 * 2 + 10, mv);
   if (1 - pout > 0) {
     const [tc, tg] = TMP;
     clearLayer(tg, g.getTransform());
@@ -508,7 +529,10 @@ function sceneMenu(g, t, T) {
   }
   drawMenuBar(g, T, 1, slide);
   g.restore();
-  caption(g, 960, 720, 'Lives in your menu bar.', null, t, 28.6, 32.4, { align: 'center' });
+  if (VERT) {
+    caption(g, 540, 1130, 'Lives in your', null, t, 28.6, 32.4, { align: 'center' });
+    caption(g, 540, 1228, 'menu bar.', null, t, 28.8, 32.4, { align: 'center' });
+  } else caption(g, 960, 720, 'Lives in your menu bar.', null, t, 28.6, 32.4, { align: 'center' });
 }
 
 function sceneExact(g, t, T) {
@@ -520,33 +544,37 @@ function sceneExact(g, t, T) {
   const b = blockAt(T);
   const acc = b.kind === 'focus' ? C.focus : C.brk;
   const lab = b.kind === 'focus' ? 'Focus' : 'Break';
-  const lw = tw(d, lab, 30, 500, 'SFS');
+  // the vertical cut stacks the same column lower and a little larger, on a narrower tape
+  const X = FW / 2, L = VERT ? { lab: 640, cd: 865, sub: 940, tape: 1010, TW: 300, ts: 36, cs: 220, asl: 940 }
+                               : { lab: 208, cd: 380, sub: 440, tape: 500, TW: 360, ts: 30, cs: 168, asl: 480 };
+  const lw = tw(d, lab, L.ts, 500, 'SFS');
   d.save(); d.shadowColor = rgba(acc, .6); d.shadowBlur = 14;
-  d.fillStyle = rgba(acc); d.beginPath(); d.arc(960 - lw / 2 - 18, 208, 9, 0, 7); d.fill(); d.restore();
-  text(d, lab, 960 - lw / 2 + 4, 208, { size: 30, weight: 500, fam: 'SFS', base: 'middle' });
-  tab(d, mmss(b.end - T), 960, 380, 168, 300, 'SFR', C.text, 1, 'center', (b.end - T) * 60);
+  d.fillStyle = rgba(acc); d.beginPath(); d.arc(X - lw / 2 - 18, L.lab, 9, 0, 7); d.fill(); d.restore();
+  text(d, lab, X - lw / 2 + 4, L.lab, { size: L.ts, weight: 500, fam: 'SFS', base: 'middle' });
+  tab(d, mmss(b.end - T), X, L.cd, L.cs, 300, 'SFR', C.text, 1, 'center', (b.end - T) * 60);
   const nextName = b.kind === 'focus' ? 'break' : 'focus';
-  text(d, `until ${nextName} at ${clock(WALL0 + b.end)}`, 960, 440, { size: 30, fam: 'SFS', color: C.sec, align: 'center' });
-  drawTape(d, { x: 960 - 360 * 3.4 / 2, y: 500, s: 3.4, W: 360, needle: 180, T });
+  text(d, `until ${nextName} at ${clock(WALL0 + b.end)}`, X, L.sub, { size: L.ts, fam: 'SFS', color: C.sec, align: 'center' });
+  drawTape(d, { x: X - L.TW * 3.4 / 2, y: L.tape, s: 3.4, W: L.TW, needle: L.TW / 2, T });
   if (sk > 0) {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
     g.filter = `blur(${(sk * 28).toFixed(2)}px)`; g.globalAlpha = 1 - sk * .3; g.drawImage(tc, 0, 0);
-    g.filter = 'none'; g.globalAlpha = 1; g.fillStyle = `rgba(250,250,252,${sk * .5})`; g.fillRect(0, 0, 1920, 1080);
+    g.filter = 'none'; g.globalAlpha = 1; g.fillStyle = `rgba(250,250,252,${sk * .5})`; g.fillRect(0, 0, FW, FH);
     g.restore();
     const ak = eio(seg(sk, .85, 1));
     g.save(); if (ak < 1) g.filter = `blur(${((1 - ak) * 6).toFixed(2)}px)`;
-    text(g, 'Asleep', 960, 480, { size: 52, weight: 300, fam: 'SFD', color: C.sec, align: 'center', alpha: ak, track: -.2 });
-    text(g, '20 minutes later…', 960, 536, { size: 28, fam: 'SFS', color: C.sec, align: 'center', alpha: ak * .8 });
+    text(g, 'Asleep', X, L.asl, { size: VERT ? 64 : 52, weight: 300, fam: 'SFD', color: C.sec, align: 'center', alpha: ak, track: -.2 });
+    text(g, '20 minutes later…', X, L.asl + (VERT ? 66 : 56), { size: VERT ? 34 : 28, fam: 'SFS', color: C.sec, align: 'center', alpha: ak * .8 });
     g.restore();
   }
-  caption(g, 960, 860, 'Close the lid.', null, t, 40.8, 42.2, { align: 'center' });
-  caption(g, 960, 860, 'Open it. Still exact.', null, t, 44.3, 47.3, { align: 'center' });
+  const cy = VERT ? 1440 : 860;
+  caption(g, X, cy, 'Close the lid.', null, t, 40.8, 42.2, { align: 'center' });
+  caption(g, X, cy, 'Open it. Still exact.', null, t, 44.3, 47.3, { align: 'center' });
 }
 
 function sceneEnd(g, t) {
   // the icon springs up out of a blur, then a band of light sweeps across it
   const x = seg(t, 47.1, 48.6), ik = eout(seg(t, 47.1, 47.7));
-  const sc = lerp(.8, 1, spring(x)), IS = 300 * sc, cx = 960, cy = 360;
+  const sc = lerp(.8, 1, spring(x)), IS = (VERT ? 360 : 300) * sc, cx = FW / 2, cy = VERT ? 760 : 360;
   if (ik > 0 && ICON.complete) {
     const [tc, tg] = TMP;
     clearLayer(tg, g.getTransform());
@@ -565,8 +593,8 @@ function sceneEnd(g, t) {
     if (ik < 1) g.filter = `blur(${((1 - ik) * 16).toFixed(2)}px)`;
     g.drawImage(tc, 0, 0); g.restore();
   }
-  caption(g, 960, 660, 'Tape', null, t, 47.8, 99, { align: 'center', size: 136, weight: 400, chars: true, stagger: .07 });
-  caption(g, 960, 740, 'A calm Pomodoro timer for your Mac.', null, t, 48.6, 99, { align: 'center', size: 34, weight: 400, fam: 'SFS', color: C.sec, stagger: .05 });
+  caption(g, cx, VERT ? 1120 : 660, 'Tape', null, t, 47.8, 99, { align: 'center', size: VERT ? 150 : 136, weight: 400, chars: true, stagger: .07 });
+  caption(g, cx, VERT ? 1210 : 740, 'A calm Pomodoro timer for your Mac.', null, t, 48.6, 99, { align: 'center', size: VERT ? 40 : 34, weight: 400, fam: 'SFS', color: C.sec, stagger: .05 });
 }
 
 function render(t) {

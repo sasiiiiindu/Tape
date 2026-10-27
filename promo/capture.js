@@ -1,20 +1,22 @@
 // node capture.js stills 0,5,13 outdir   |   node capture.js video out.mp4 ffmpegPath
+// add 'vertical' as a last argument for the 9:16 story cut
 const puppeteer = require('puppeteer-core');
 const { spawn } = require('child_process');
 const path = require('path');
 const FPS = 60, DUR = 55;
 
 (async () => {
-  const [mode, a, b] = process.argv.slice(2);
+  const [mode, a, b, fmt] = process.argv.slice(2);
+  const vert = fmt === 'vertical', W = vert ? 1080 : 1920, H = vert ? 1920 : 1080;
   const browser = await puppeteer.launch({
     executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     headless: true, args: ['--allow-file-access-from-files', '--force-color-profile=srgb', '--hide-scrollbars'],
   });
   const page = await browser.newPage(); page.on('pageerror', e => console.error('PAGEERR', e.message)); page.on('console', m => console.log('CONSOLE', m.text()));
-  await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
-  await page.goto('file://' + path.join(__dirname, 'film.html'));
+  await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
+  await page.goto('file://' + path.join(__dirname, 'film.html') + (vert ? '?vertical' : ''));
   await page.evaluate(() => window.ready);
-  const shot = async t => { await page.evaluate(t => window.render(t), t); return page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 1920, height: 1080 }, omitBackground: false }); };
+  const shot = async t => { await page.evaluate(t => window.render(t), t); return page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: W, height: H }, omitBackground: false }); };
 
   if (mode === 'stills') {
     const fs = require('fs');
