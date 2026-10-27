@@ -1,0 +1,7 @@
+node_modules/
+.venv/
+*.ttf
+icon-1024.png
+*.wav
+*.mp4
+timeline.json

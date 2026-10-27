@@ -1,0 +1,8 @@
+{
+  "name": "tape-promo",
+  "private": true,
+  "description": "Renders the Tape promo film",
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}
